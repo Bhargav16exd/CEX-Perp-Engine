@@ -1,10 +1,11 @@
 import { randomUUID } from "crypto";
-import { actionCreateLong, FILLS, updateOrderOfMakershanldeContract } from "./utils.js";
+import { actionCreateLong, updateOrderOfMakershanldeContract } from "./utils.js";
 import { OrderSide, OrderType } from "../../types/perp-types.js";
 import { readBalanceStoreUserLockedBalance, readBalanceStoreUserTotalBalance, updateBalanceStoreUserLockedBalance } from "../../memory/balances/perp-balances.js";
 import { PERPETUAL_ORDERBOOK_STORE, PERPETUAL_ORDERBOOK_STORE_INDEX } from "../../memory/orderbook/prep-orderbook.js";
 import { createOrder, fetchFullFilledQuantityFromOrderId, ORDERS, updateOrderFullFilledQuantity } from "../../memory/orders/orders.js";
 import { CONTRACT_STORE } from "../../memory/contracts/contracts-store.js";
+import { FILLS } from "../../memory/fills/fills.js";
 
 export type OrderInputPayload = {
 	req:Request,
@@ -133,7 +134,7 @@ const handlePriceNotAvailableInLimitOrder = (req: Request, res: Response, userId
 
 		if(shortInfo?.remainingQuantity == (userQuantity - fullfilledQuantity)){
 			//update orders of makers
-			updateOrderOfMakershanldeContract(shortInfo.makerIds, shortInfo.remainingQuantity, userId, OrderSide.LONG);
+			updateOrderOfMakershanldeContract(shortInfo.makerIds, shortInfo.remainingQuantity, userId, OrderSide.LONG, orderId);
 
 			//update order of taker
 			updateOrderFullFilledQuantity(orderId, fetchFullFilledQuantityFromOrderId(orderId) + shortInfo.remainingQuantity);
@@ -147,7 +148,7 @@ const handlePriceNotAvailableInLimitOrder = (req: Request, res: Response, userId
 
 		if(shortInfo?.remainingQuantity > (userQuantity - fullfilledQuantity) ){
 			//update orders of makers
-			updateOrderOfMakershanldeContract(shortInfo.makerIds, (userQuantity - fullfilledQuantity), userId, OrderSide.LONG);
+			updateOrderOfMakershanldeContract(shortInfo.makerIds, (userQuantity - fullfilledQuantity), userId, OrderSide.LONG, orderId);
 
 			//update order of taker
 			updateOrderFullFilledQuantity(orderId, fetchFullFilledQuantityFromOrderId(orderId) + (userQuantity - fullfilledQuantity));
@@ -160,7 +161,7 @@ const handlePriceNotAvailableInLimitOrder = (req: Request, res: Response, userId
 		}
 
 		//update order of makers
-		updateOrderOfMakershanldeContract(shortInfo.makerIds, shortInfo.remainingQuantity, userId, OrderSide.LONG);
+		updateOrderOfMakershanldeContract(shortInfo.makerIds, shortInfo.remainingQuantity, userId, OrderSide.LONG, orderId);
 
 		//update order of taker
 		updateOrderFullFilledQuantity(orderId, fetchFullFilledQuantityFromOrderId(orderId) + shortInfo.remainingQuantity);
@@ -177,16 +178,14 @@ const handlePriceNotAvailableInLimitOrder = (req: Request, res: Response, userId
 
 		if(price == PERPETUAL_ORDERBOOK_STORE_INDEX[stockSymbol].short[orderbook_short_index_length-1]){
 			actionCreateLong(userId, stockSymbol, userPrice, (userQuantity - fullfilledQuantity), orderId);
-		}
-
-		count ++;		
+		} 
+    count ++;		
 	}
 
 	while(count > 0){
 		PERPETUAL_ORDERBOOK_STORE_INDEX[stockSymbol].short.shift();
 		count--;
-	}
-
+	} 
 	return PERPETUAL_ORDERBOOK_STORE[stockSymbol];
 }
 

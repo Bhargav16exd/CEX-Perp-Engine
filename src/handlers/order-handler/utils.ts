@@ -1,18 +1,8 @@
+import { FILLS } from "../../memory/fills/fills.js";
 import { addPriceToOrderBookIndex,PERPETUAL_ORDERBOOK_STORE} from "../../memory/orderbook/prep-orderbook.js"
 import { ORDERS, updateOrderFullFilledQuantity } from "../../memory/orders/orders.js";
 import { OrderSide } from "../../types/perp-types.js"
 import { hanldeContracts } from "../contract-handler/contract.handler.js"
-
-type FillType = {
-  makerID: string;
-  takerID: string;
-  orderID: string;
-  quantity: number;
-  market: string;
-  price:number;
-}
-
-export let FILLS: FillType[] = [];
 
 export const actionCreateLong = (userId:string, stockSymbol:string, userPrice:number, quantity:number, orderId:string) => {
 
@@ -49,7 +39,7 @@ export const actionCreateShort = (userId:string, stockSymbol:string, userPrice:n
 	return true
 }
 
-export const updateOrderOfMakershanldeContract = (userIds: Record<string,Array<string>>, quantity: number, takerId:string, OrderSideInput:OrderSide) => {
+export const updateOrderOfMakershanldeContract = (userIds: Record<string,Array<string>>, quantity: number, takerId:string, OrderSideInput:OrderSide, takerOrderID:string) => {
 	/*
 	------- INPUT INFO -------	
 	quantity : input quantity is remaining quantitiy left for that price bracket
@@ -88,7 +78,8 @@ export const updateOrderOfMakershanldeContract = (userIds: Record<string,Array<s
         FILLS.push({
           makerID:userId,
           takerID:takerId,
-          orderID:orderId,
+          makerOrderID:orderId,
+          takerOrderID:takerOrderID,
           quantity:order!.quantity,
           market:order!.stockSymbol,
           price:order!.price
@@ -100,7 +91,8 @@ export const updateOrderOfMakershanldeContract = (userIds: Record<string,Array<s
         FILLS.push({
           makerID:userId,
           takerID:takerId,
-          orderID:orderId,
+          makerOrderID:orderId,
+          takerOrderID:takerOrderID,
           quantity:(quantity - fullfilledQuantity),
           market:order!.stockSymbol,
           price:order!.price
