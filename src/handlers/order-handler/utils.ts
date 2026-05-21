@@ -1,6 +1,18 @@
-import { addPriceToOrderBookIndex, ORDERS, PERPETUAL_ORDERBOOK_STORE, updateOrderFullFilledQuantity} from "../../memory/orderbook/prep-orderbook.js"
+import { addPriceToOrderBookIndex,PERPETUAL_ORDERBOOK_STORE} from "../../memory/orderbook/prep-orderbook.js"
+import { ORDERS, updateOrderFullFilledQuantity } from "../../memory/orders/orders.js";
 import { OrderSide } from "../../types/perp-types.js"
 import { hanldeContracts } from "../contract-handler/contract.handler.js"
+
+type FillType = {
+  makerID: string;
+  takerID: string;
+  orderID: string;
+  quantity: number;
+  market: string;
+  price:number;
+}
+
+export let FILLS: FillType[] = [];
 
 export const actionCreateLong = (userId:string, stockSymbol:string, userPrice:number, quantity:number, orderId:string) => {
 
@@ -56,7 +68,15 @@ export const updateOrderOfMakershanldeContract = (userIds: Record<string,Array<s
 
 	for(const userId in userIds){
 
-		userIds[userId]?.forEach((orderId)=>{
+    if(fullfilledQuantity == quantity){
+      break;
+    }
+
+		for(const orderId of userIds[userId]!){
+
+      if(fullfilledQuantity == quantity){
+        break;
+      }
 
 			const order = ORDERS[orderId];  
       let pos = 0;
@@ -65,10 +85,27 @@ export const updateOrderOfMakershanldeContract = (userIds: Record<string,Array<s
 				updateOrderFullFilledQuantity(orderId, order?.quantity!);
 				fullfilledQuantity = fullfilledQuantity + order?.quantity!
         pos = order?.quantity!
+        FILLS.push({
+          makerID:userId,
+          takerID:takerId,
+          orderID:orderId,
+          quantity:order!.quantity,
+          market:order!.stockSymbol,
+          price:order!.price
+        })
 			}
 			else{
 				updateOrderFullFilledQuantity(orderId, order?.fullFilledQuantity! + (quantity - fullfilledQuantity))
         pos = (quantity - fullfilledQuantity);
+        FILLS.push({
+          makerID:userId,
+          takerID:takerId,
+          orderID:orderId,
+          quantity:(quantity - fullfilledQuantity),
+          market:order!.stockSymbol,
+          price:order!.price
+        })
+        fullfilledQuantity = fullfilledQuantity + (quantity - fullfilledQuantity)
 			}
 
       if(OrderSideInput == OrderSide.LONG){
@@ -78,7 +115,7 @@ export const updateOrderOfMakershanldeContract = (userIds: Record<string,Array<s
         hanldeContracts("sol", pos, order?.price!, userId, takerId);
       }
       
-		})
+		}
 
 	}
 

@@ -1,8 +1,9 @@
 import { randomUUID } from "crypto";
-import { actionCreateLong, updateOrderOfMakershanldeContract } from "./utils.js";
+import { actionCreateLong, FILLS, updateOrderOfMakershanldeContract } from "./utils.js";
 import { OrderSide, OrderType } from "../../types/perp-types.js";
-import PERPETUAL_BALANCE_STORE, { readBalanceStoreUserLockedBalance, readBalanceStoreUserTotalBalance, updateBalanceStoreUserLockedBalance } from "../../memory/balances/perp-balances.js";
-import { createOrder, fetchFullFilledQuantityFromOrderId, PERPETUAL_ORDERBOOK_STORE, PERPETUAL_ORDERBOOK_STORE_INDEX, updateOrderFullFilledQuantity } from "../../memory/orderbook/prep-orderbook.js";
+import { readBalanceStoreUserLockedBalance, readBalanceStoreUserTotalBalance, updateBalanceStoreUserLockedBalance } from "../../memory/balances/perp-balances.js";
+import { PERPETUAL_ORDERBOOK_STORE, PERPETUAL_ORDERBOOK_STORE_INDEX } from "../../memory/orderbook/prep-orderbook.js";
+import { createOrder, fetchFullFilledQuantityFromOrderId, ORDERS, updateOrderFullFilledQuantity } from "../../memory/orders/orders.js";
 import { CONTRACT_STORE } from "../../memory/contracts/contracts-store.js";
 
 export type OrderInputPayload = {
@@ -159,7 +160,7 @@ const handlePriceNotAvailableInLimitOrder = (req: Request, res: Response, userId
 		}
 
 		//update order of makers
-		updateOrderOfMakershanldeContract(shortInfo.makerIds, (userQuantity - fullfilledQuantity), userId, OrderSide.LONG);
+		updateOrderOfMakershanldeContract(shortInfo.makerIds, shortInfo.remainingQuantity, userId, OrderSide.LONG);
 
 		//update order of taker
 		updateOrderFullFilledQuantity(orderId, fetchFullFilledQuantityFromOrderId(orderId) + shortInfo.remainingQuantity);
@@ -186,7 +187,7 @@ const handlePriceNotAvailableInLimitOrder = (req: Request, res: Response, userId
 		count--;
 	}
 
-	return PERPETUAL_ORDERBOOK_STORE[stockSymbol]
+	return PERPETUAL_ORDERBOOK_STORE[stockSymbol];
 }
 
 const handleOrderTypeMarket = () => {

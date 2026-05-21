@@ -1,10 +1,11 @@
 import { type OrderInputPayload } from "./long.handler.js";
 import { randomUUID } from "crypto";
-import { actionCreateShort, updateOrderOfMakershanldeContract} from "./utils.js";
+import { actionCreateShort, FILLS, updateOrderOfMakershanldeContract} from "./utils.js";
 import PERPETUAL_BALANCE_STORE, { readBalanceStoreUserLockedBalance, readBalanceStoreUserTotalBalance, updateBalanceStoreUserLockedBalance } from "../../memory/balances/perp-balances.js";
 import { OrderSide, OrderType } from "../../types/perp-types.js";
-import { createOrder, fetchFullFilledQuantityFromOrderId, PERPETUAL_ORDERBOOK_STORE, PERPETUAL_ORDERBOOK_STORE_INDEX, updateOrderFullFilledQuantity } from "../../memory/orderbook/prep-orderbook.js";
+import { PERPETUAL_ORDERBOOK_STORE, PERPETUAL_ORDERBOOK_STORE_INDEX } from "../../memory/orderbook/prep-orderbook.js";
 import { CONTRACT_STORE } from "../../memory/contracts/contracts-store.js";
+import { createOrder, fetchFullFilledQuantityFromOrderId, ORDERS, updateOrderFullFilledQuantity } from "../../memory/orders/orders.js";
 
 
 export const hanldeShortOrders = (payload: OrderInputPayload):any => {
@@ -146,11 +147,10 @@ const handlePriceNotAvailableInLimitOrder = (req: Request, res: Response, userId
 		}
 
     //upate order of makers
-		updateOrderOfMakershanldeContract(longInfo.makerIds, (userQuantity - fullfilledQuantity), userId, OrderSide.SHORT);
+		updateOrderOfMakershanldeContract(longInfo.makerIds, longInfo.remainingQuantity, userId, OrderSide.SHORT);
 
     //upate order of taker
     updateOrderFullFilledQuantity(orderId, fetchFullFilledQuantityFromOrderId(orderId) + longInfo.remainingQuantity);
-
 
 		//update fullfilled quantity
 		fullfilledQuantity = fullfilledQuantity + longInfo.remainingQuantity;
@@ -172,10 +172,6 @@ const handlePriceNotAvailableInLimitOrder = (req: Request, res: Response, userId
 		PERPETUAL_ORDERBOOK_STORE_INDEX[stockSymbol].long.pop();
 		count--;
 	}
-
-	//update taker
-	updateOrderFullFilledQuantity(orderId, fullfilledQuantity);
-  
 	return PERPETUAL_ORDERBOOK_STORE[stockSymbol];
 }
 
