@@ -13,8 +13,11 @@ interface currencyType {
   locked:number;
 }
 
-
-
+export interface UpdateBalanceInput {
+  id:string,
+  balance:number,
+  marketType:number
+}
 
 
 

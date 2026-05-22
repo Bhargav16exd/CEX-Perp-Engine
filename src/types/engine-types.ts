@@ -2,6 +2,7 @@ export type EngineCommandType =
   | "create_order"
   | "get_depth"
   | "cancel_order"
+  | "update_balance"
 
 export interface EngineRequestType {
   transactionId: string;

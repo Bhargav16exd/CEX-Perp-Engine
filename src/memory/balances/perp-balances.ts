@@ -1,4 +1,4 @@
-import type { PerpetualBalanceStoreType } from "./perp-balances-types.js";
+import type { PerpetualBalanceStoreType, UpdateBalanceInput } from "./perp-balances-types.js";
 
 const PERPETUAL_BALANCE_STORE: PerpetualBalanceStoreType = {
 	"14":{
@@ -82,5 +82,12 @@ export const updateBalanceStoreUserLockedBalance = (userId:string, value:number)
     PERPETUAL_BALANCE_STORE[userId].balance["inr"].locked = value
 }
 
+export const hanldeUserBalanceUpdate = (payload : UpdateBalanceInput):any => {
+  const { id , balance, marketType } = payload
+  const userTotalBalance = readBalanceStoreUserTotalBalance(id)!;
+  updateBalanceStoreUserTotalBalance(id, userTotalBalance + balance)
+  //@ts-ignore
+  return PERPETUAL_BALANCE_STORE[id]?.balance["inr"]
+}
 
 export default PERPETUAL_BALANCE_STORE;

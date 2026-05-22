@@ -1,8 +1,10 @@
 import { FILLS } from "../../memory/fills/fills.js";
 import { addPriceToOrderBookIndex,PERPETUAL_ORDERBOOK_STORE} from "../../memory/orderbook/prep-orderbook.js"
 import { ORDERS, updateOrderFullFilledQuantity } from "../../memory/orders/orders.js";
+import { queueMessageForAdapter } from "../../queue/db-publisher-client.js";
 import { OrderSide } from "../../types/perp-types.js"
 import { hanldeContracts } from "../contract-handler/contract.handler.js"
+import { AdapterEntityType, AdapterMessageType } from "../../types/db-adapter-types.js"
 
 export const actionCreateLong = (userId:string, stockSymbol:string, userPrice:number, quantity:number, orderId:string) => {
 
@@ -75,28 +77,39 @@ export const updateOrderOfMakershanldeContract = (userIds: Record<string,Array<s
 				updateOrderFullFilledQuantity(orderId, order?.quantity!);
 				fullfilledQuantity = fullfilledQuantity + order?.quantity!
         pos = order?.quantity!
-        FILLS.push({
-          makerID:userId,
-          takerID:takerId,
-          makerOrderID:orderId,
-          takerOrderID:takerOrderID,
-          quantity:order!.quantity,
-          market:order!.stockSymbol,
-          price:order!.price
+
+        queueMessageForAdapter({
+          messageType:AdapterMessageType.APPEND_ONLY,
+          entityType:AdapterEntityType.FILL,
+          payload:{
+            makerID:userId,
+            takerID:takerId,
+            makerOrderID:orderId,
+            takerOrderID:takerOrderID,
+            quantity:order!.quantity,
+            market:order!.stockSymbol,
+            price:order!.price
+          }
         })
 			}
 			else{
 				updateOrderFullFilledQuantity(orderId, order?.fullFilledQuantity! + (quantity - fullfilledQuantity))
         pos = (quantity - fullfilledQuantity);
-        FILLS.push({
-          makerID:userId,
-          takerID:takerId,
-          makerOrderID:orderId,
-          takerOrderID:takerOrderID,
-          quantity:(quantity - fullfilledQuantity),
-          market:order!.stockSymbol,
-          price:order!.price
+
+        queueMessageForAdapter({
+          messageType:AdapterMessageType.APPEND_ONLY,
+          entityType:AdapterEntityType.FILL,
+          payload:{
+            makerID:userId,
+            takerID:takerId,
+            makerOrderID:orderId,
+            takerOrderID:takerOrderID,
+            quantity:(quantity - fullfilledQuantity),
+            market:order!.stockSymbol,
+            price:order!.price
+          }
         })
+
         fullfilledQuantity = fullfilledQuantity + (quantity - fullfilledQuantity)
 			}
 

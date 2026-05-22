@@ -2,13 +2,16 @@ import type { Side } from "../orderbook/prep-orderbook.js";
 
 type Orders = {
 	orderId:string,
-	stockSymbol:string,
+  side:Side,
+
 	price:number,
 	quantity:number,
 	fullFilledQuantity?:number,
-	side:Side,
+	
 	userId:string,
 	createdAt:string
+
+  stockSymbol:string,
 }
 
 export const ORDERS : Record<string, Orders> = {}
