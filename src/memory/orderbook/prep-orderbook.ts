@@ -15,6 +15,7 @@ export const PERPETUAL_ORDERBOOK_STORE_INDEX: PerpetualOrderbookIndexStoreType =
 };
 
 export type Side = "short" | "long";
+export type Type = "limit" | "market";
 
 export const addPriceToOrderBookIndex = (stockSymbol:string,side:Side,price:number) => {
 

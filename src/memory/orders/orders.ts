@@ -1,43 +1,52 @@
-import type { Side } from "../orderbook/prep-orderbook.js";
+import type { Side, Type } from "../orderbook/prep-orderbook.js";
 
-type Orders = {
+type OrderStatus = "open" | "canceled" | "partialfill" | "closed"
+
+export type Order = {
 	orderId:string,
+
   side:Side,
+  type:Type,
 
 	price:number,
 	quantity:number,
-	fullFilledQuantity?:number,
+	filledQuantity:number,
 	
+  status:OrderStatus
+
 	userId:string,
-	createdAt:string
 
   stockSymbol:string,
 }
 
-export const ORDERS : Record<string, Orders> = {}
+export const APPEND_ONLY_ORDERS : Array<Order> = [];
+
+export const ORDERS : Record<string, Order> = {}
 
 export const fetchOrderFromOrderId = (orderId:string) => {
 	return ORDERS[orderId];
 }
 
 export const fetchFullFilledQuantityFromOrderId = (orderId:string) => {
-	return ORDERS[orderId]?.fullFilledQuantity || 0;
+	return ORDERS[orderId]!.filledQuantity! || 0;
 }
 
-export const createOrder = (orderId:string, stockSymbol:string, price:number, quantity:number, side:Side, userId:string) => {
-	ORDERS[orderId] = {
+export const createOrder = (orderId:string, stockSymbol:string, price:number, quantity:number, side:Side, userId:string, type:Type, status:OrderStatus):Order=> {
+		ORDERS[orderId] = {
 		orderId,
-		stockSymbol,
+		side,
+    type,
 		price,
 		quantity,
-		fullFilledQuantity:0,
-		side,
+		filledQuantity:0,
+    status:"open",
 		userId,
-		createdAt: new Date().toISOString()	
+    stockSymbol
 	}
+  return ORDERS[orderId]
 }
 
 export const updateOrderFullFilledQuantity = (orderId:string, fullFilledQuantity:number) => {
 	if(!ORDERS[orderId]) return;
-	ORDERS[orderId].fullFilledQuantity = fullFilledQuantity;
+	ORDERS[orderId].filledQuantity = fullFilledQuantity;
 }

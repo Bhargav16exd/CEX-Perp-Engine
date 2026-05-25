@@ -78,6 +78,7 @@ export const updateOrderOfMakershanldeContract = (userIds: Record<string,Array<s
 				fullfilledQuantity = fullfilledQuantity + order?.quantity!
         pos = order?.quantity!
 
+        //push fills
         queueMessageForAdapter({
           messageType:AdapterMessageType.APPEND_ONLY,
           entityType:AdapterEntityType.FILL,
@@ -91,9 +92,20 @@ export const updateOrderOfMakershanldeContract = (userIds: Record<string,Array<s
             price:order!.price
           }
         })
+
+        //push update order
+        queueMessageForAdapter({
+          messageType:AdapterMessageType.UPDATE,
+          entityType:AdapterEntityType.ORDER,
+          payload:{
+            orderId,
+            quantity:order!.quantity,
+            status:"closed"
+          }
+        })
 			}
 			else{
-				updateOrderFullFilledQuantity(orderId, order?.fullFilledQuantity! + (quantity - fullfilledQuantity))
+				updateOrderFullFilledQuantity(orderId, order?.filledQuantity! + (quantity - fullfilledQuantity))
         pos = (quantity - fullfilledQuantity);
 
         queueMessageForAdapter({
@@ -107,6 +119,17 @@ export const updateOrderOfMakershanldeContract = (userIds: Record<string,Array<s
             quantity:(quantity - fullfilledQuantity),
             market:order!.stockSymbol,
             price:order!.price
+          }
+        })
+
+        //push update order
+        queueMessageForAdapter({
+          messageType:AdapterMessageType.UPDATE,
+          entityType:AdapterEntityType.ORDER,
+          payload:{
+            orderId,
+            quantity:(quantity - fullfilledQuantity),
+            status:"partialfill"
           }
         })
 
@@ -126,3 +149,11 @@ export const updateOrderOfMakershanldeContract = (userIds: Record<string,Array<s
 
 }
 
+export const identifyOrderStatus = (inputQuantity:number, fullfilledquantity:number) => {
+  if(inputQuantity === fullfilledquantity){
+    return "closed"
+  }
+  else if(inputQuantity > fullfilledquantity){
+    return "partialfill"
+  }
+}

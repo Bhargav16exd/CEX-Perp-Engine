@@ -1,12 +1,12 @@
 import { type OrderInputPayload } from "./long.handler.js";
 import { randomUUID } from "crypto";
-import { actionCreateShort, updateOrderOfMakershanldeContract} from "./utils.js";
+import { actionCreateShort, identifyOrderStatus, updateOrderOfMakershanldeContract} from "./utils.js";
 import PERPETUAL_BALANCE_STORE, { readBalanceStoreUserLockedBalance, readBalanceStoreUserTotalBalance, updateBalanceStoreUserLockedBalance } from "../../memory/balances/perp-balances.js";
 import { OrderSide, OrderType } from "../../types/perp-types.js";
 import { PERPETUAL_ORDERBOOK_STORE, PERPETUAL_ORDERBOOK_STORE_INDEX } from "../../memory/orderbook/prep-orderbook.js";
-import { CONTRACT_STORE } from "../../memory/contracts/contracts-store.js";
-import { createOrder, fetchFullFilledQuantityFromOrderId, ORDERS, updateOrderFullFilledQuantity } from "../../memory/orders/orders.js";
-import { FILLS } from "../../memory/fills/fills.js";
+import { createOrder, fetchFullFilledQuantityFromOrderId, ORDERS, updateOrderFullFilledQuantity, type Order } from "../../memory/orders/orders.js";
+import { queueMessageForAdapter } from "../../queue/db-publisher-client.js";
+import { AdapterEntityType, AdapterMessageType } from "../../types/db-adapter-types.js";
 
 
 export const hanldeShortOrders = (payload: OrderInputPayload):any => {
@@ -49,7 +49,7 @@ const handleOrderTypeLimit = (req: Request, res: Response, userId: string, stock
 
   //CREATE ORDER
 	const orderId = randomUUID();
-	createOrder(orderId, stockSymbol, userPrice, quantity, "short", userId);
+	let order = createOrder(orderId, stockSymbol, userPrice, quantity, "short", userId, "limit", "open");
 
 	if(
 		!PERPETUAL_ORDERBOOK_STORE[stockSymbol]?.long[userPrice] 
@@ -75,22 +75,32 @@ const handleOrderTypeLimit = (req: Request, res: Response, userId: string, stock
 			}else{
 				PERPETUAL_ORDERBOOK_STORE[stockSymbol].short[userPrice].makerIds[userId]!.push(orderId);
 			}
+      queueMessageForAdapter({
+        messageType:AdapterMessageType.INSERT,
+        entityType:AdapterEntityType.ORDER,
+        payload:order
+      })
 			return PERPETUAL_ORDERBOOK_STORE[stockSymbol];
 		}
 		else{
       //if there exist no LONG order at same price , create SHORT
 			actionCreateShort(userId, stockSymbol, userPrice, quantity, orderId);
+      queueMessageForAdapter({
+        messageType:AdapterMessageType.INSERT,
+        entityType:AdapterEntityType.ORDER,
+        payload:order
+      })
 			return PERPETUAL_ORDERBOOK_STORE[stockSymbol];
 		}
 	}
 
-	return handlePriceNotAvailableInLimitOrder(req, res, userId, stockSymbol, type, side, userPrice, quantity, collateral, orderId);
+	return handlePriceNotAvailableInLimitOrder(req, res, userId, stockSymbol, type, side, userPrice, quantity, collateral, orderId, order);
 }
 
-const handlePriceNotAvailableInLimitOrder = (req: Request, res: Response, userId: string, stockSymbol: string, type: string, side: string, userPrice: number, userQuantity: number, collateral:number, orderId:string) => {
+const handlePriceNotAvailableInLimitOrder = (req: Request, res: Response, userId: string, stockSymbol: string, type: string, side: string, userPrice: number, userQuantity: number, collateral:number, orderId:string, order:Order) => {
 
 	let fullfilledQuantity = 0;
-	let totalAmountSpent = 0;
+  let finalfilledquantity = 0;
 	let count = 0;
 	const orderbook_long_index_length = PERPETUAL_ORDERBOOK_STORE_INDEX[stockSymbol]?.long.length!
 
@@ -120,6 +130,9 @@ const handlePriceNotAvailableInLimitOrder = (req: Request, res: Response, userId
 		*/
 
 		if(longInfo?.remainingQuantity == (userQuantity - fullfilledQuantity)){
+      
+      finalfilledquantity = finalfilledquantity + (userQuantity - fullfilledQuantity)
+
       //update orders of makers
 			updateOrderOfMakershanldeContract(longInfo.makerIds, longInfo?.remainingQuantity, userId, OrderSide.SHORT, orderId);
 
@@ -134,8 +147,11 @@ const handlePriceNotAvailableInLimitOrder = (req: Request, res: Response, userId
 		}
 
 		if(longInfo?.remainingQuantity > (userQuantity - fullfilledQuantity)){
+      
+      finalfilledquantity = finalfilledquantity + (userQuantity - fullfilledQuantity);
+      
       //upate orders of makers
-			updateOrderOfMakershanldeContract(longInfo.makerIds, (userQuantity - fullfilledQuantity), userId, OrderSide.SHORT, orderId);
+      updateOrderOfMakershanldeContract(longInfo.makerIds, (userQuantity - fullfilledQuantity), userId, OrderSide.SHORT, orderId);
 
       //update orders of takers
       updateOrderFullFilledQuantity(orderId, fetchFullFilledQuantityFromOrderId(orderId) + (userQuantity - fullfilledQuantity));
@@ -154,6 +170,7 @@ const handlePriceNotAvailableInLimitOrder = (req: Request, res: Response, userId
     updateOrderFullFilledQuantity(orderId, fetchFullFilledQuantityFromOrderId(orderId) + longInfo.remainingQuantity);
 
 		//update fullfilled quantity
+    finalfilledquantity = finalfilledquantity + longInfo.remainingQuantity;
 		fullfilledQuantity = fullfilledQuantity + longInfo.remainingQuantity;
 
 		//delete entry at that price
@@ -166,6 +183,21 @@ const handlePriceNotAvailableInLimitOrder = (req: Request, res: Response, userId
 		if(price == PERPETUAL_ORDERBOOK_STORE_INDEX[stockSymbol].long[0]){
 			actionCreateShort(userId, stockSymbol, userPrice, (userQuantity - fullfilledQuantity), orderId);
 		}
+
+    let messageType = AdapterMessageType.INSERT;
+    order.status = identifyOrderStatus(userQuantity, finalfilledquantity)!;
+
+    if(order.status === "closed"){
+      delete ORDERS[orderId];
+      messageType = AdapterMessageType.APPEND_ONLY
+    }
+    
+    queueMessageForAdapter({
+      messageType,
+      entityType:AdapterEntityType.ORDER,
+      payload:order
+    })
+
 		count ++;
 	}
 
