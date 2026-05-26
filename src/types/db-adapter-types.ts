@@ -8,6 +8,7 @@ export enum AdapterMessageType {
 export enum AdapterEntityType {
   FILL = "fill",
   ORDER = "order",
+  CONTRACT = "contract"
 }
 
 export interface AdapterRequestType {

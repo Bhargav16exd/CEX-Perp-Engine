@@ -1,3 +1,4 @@
+import { serveOpenContracts } from "../handlers/contract-handler/contract.handler.js";
 import { hanldeLongOrders } from "../handlers/order-handler/long.handler.js";
 import { hanldeShortOrders } from "../handlers/order-handler/short.handler.js";
 import { hanldeUserBalanceUpdate } from "../memory/balances/perp-balances.js";
@@ -6,7 +7,8 @@ import { OrderSide } from "../types/perp-types.js";
 
 enum EngineCommand {
   CREATE_ORDER = "create_order",
-  UPDATE_BALANCE = "update_balance"
+  UPDATE_BALANCE = "update_balance",
+  OPEN_CONTRACT = "get_open_contract"
 }
 
 export function engineRequestHanlder(request:EngineRequestType):any{
@@ -26,5 +28,8 @@ export function engineRequestHanlder(request:EngineRequestType):any{
     return hanldeUserBalanceUpdate(request.payload as any);
   }
 
+  if(messageType == EngineCommand.OPEN_CONTRACT){
+    return serveOpenContracts(request.payload as any);
+  }
 
 }

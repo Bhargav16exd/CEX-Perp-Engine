@@ -1,7 +1,10 @@
-import PERPETUAL_BALANCE_STORE, { readBalanceStoreUserLockedBalance, readBalanceStoreUserTotalBalance, updateBalanceStoreUserLockedBalance, updateBalanceStoreUserTotalBalance } from "../../memory/balances/perp-balances.js";
-
+import { randomUUID } from "crypto";
+import { readBalanceStoreUserLockedBalance, readBalanceStoreUserTotalBalance, updateBalanceStoreUserLockedBalance, updateBalanceStoreUserTotalBalance } from "../../memory/balances/perp-balances.js";
 import { CONTRACT_STORE, readContractStoreUserContractAvgPrice, readContractStoreUserContractCollateral, readContractStoreUserContractQuantity, readContractStoreUserContractUnrealizedPnL, updateContractStoreUserContractAvgPrice, updateContractStoreUserContractCollateral, updateContractStoreUserContractQuantity } from "../../memory/contracts/contracts-store.js";
-const MARKET_PRICE = 100;
+import type { ContractInputPayloadDbAdapter } from "../../memory/contracts/contracts-types.js";
+import { queueMessageForAdapter } from "../../queue/db-publisher-client.js";
+import { AdapterEntityType, AdapterMessageType } from "../../types/db-adapter-types.js";
+
 
 export const hanldeContracts = (stockSymbol:string, contract_quantity:number, price:number, personWhoLongedId:string, personWhoShortedId:string) => {
 
@@ -225,4 +228,73 @@ const closeContractSettleBalances = (stockSymbol:string, userId:string, complete
       updateBalanceStoreUserLockedBalance(userId, personExitingLockedBalance - (personExitingCollateral - Math.abs(personExitingPnL)));
     }
   }
+
+  const contractEntity = CONTRACT_STORE[userId]![stockSymbol]!
+
+  //after every transaction is complete push msg to queue
+  const contractId = randomUUID()
+  buildAndQueueContractEntity(contractId, contractEntity.contract_quantity, contractEntity.avg_price, contractEntity.collateral, personExitingPnL, stockSymbol, userId);
+}
+
+const buildAndQueueContractEntity = (contract_id:string, quantity:number, price:number, collateral:number, pnl:number, stockSymbol:string, userId:string) => {
+  
+  let realizedProfit = 0;
+  let realizedLoss = 0;
+
+  if(pnl > 0){
+    realizedProfit = pnl
+  }
+  else if(pnl < 0){
+    realizedLoss = pnl
+  }
+
+  const payload:ContractInputPayloadDbAdapter = {
+    id:contract_id,
+    contract_quantity:quantity,
+    avg_price:price,
+    collateral,
+    realizedProfit,
+    realizedLoss,
+    stockSymbol,
+    userId
+  };
+
+  queueMessageForAdapter({
+    messageType:AdapterMessageType.APPEND_ONLY,
+    entityType:AdapterEntityType.CONTRACT,
+    payload
+  });
+}
+
+export const serveOpenContracts = (payload:any) => {
+  
+  const { stockSymbol, userId } = payload
+
+  if(!CONTRACT_STORE[userId] || !CONTRACT_STORE[userId][stockSymbol]){
+    throw new Error("Invalid User Id or Stock Symbol")
+  }
+
+  const contract = CONTRACT_STORE[userId][stockSymbol]
+  const pnl = contract.unrealizedPnL;
+
+  let realizedProfit = 0;
+  let realizedLoss = 0;
+
+  if(pnl > 0){
+    realizedProfit = pnl
+  }
+  else if(pnl < 0){
+    realizedLoss = pnl
+  }
+
+  return {
+    contract_quantity:contract.contract_quantity,
+    avg_price:contract.avg_price,
+    collateral:contract.collateral,
+    realizedProfit,
+    realizedLoss,
+    stockSymbol,
+    userId
+  };
+
 }
