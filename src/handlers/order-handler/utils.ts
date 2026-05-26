@@ -157,3 +157,61 @@ export const identifyOrderStatus = (inputQuantity:number, fullfilledquantity:num
     return "partialfill"
   }
 }
+
+
+export const handleCancelOrder = (payload:any):any => {
+
+  const {userId , orderId} = payload;
+    
+  if(!userId || !orderId){
+    throw new Error("Invalid Inputs");
+  }
+
+  const order = ORDERS[orderId];
+
+  if(!order){
+    throw new Error("Invalid Order Id");
+  }
+
+  const price = order.price;  
+
+  if(!PERPETUAL_ORDERBOOK_STORE[order.stockSymbol]![order.side][price]){
+    throw new Error("Invalid Order Price");
+  }
+
+  //check if userid exist in makers
+  if(!PERPETUAL_ORDERBOOK_STORE[order.stockSymbol]![order.side]![price]?.makerIds[userId]){
+    throw new Error("Invalid User Id");
+  }
+
+  const totalOrderBookQuantity = PERPETUAL_ORDERBOOK_STORE[order.stockSymbol]![order.side]![price]?.totalQuantity!
+  const totalOrderBookFillledQuantity = PERPETUAL_ORDERBOOK_STORE[order.stockSymbol]![order.side]![price]?.remainingQuantity!
+  const makerIds = PERPETUAL_ORDERBOOK_STORE[order.stockSymbol]![order.side]![price]!.makerIds[userId]!
+
+  if(order.quantity == PERPETUAL_ORDERBOOK_STORE[order.stockSymbol]![order.side]![price]?.totalQuantity ){
+    delete PERPETUAL_ORDERBOOK_STORE[order.stockSymbol]![order.side]![price]
+  }
+
+  else if(PERPETUAL_ORDERBOOK_STORE[order.stockSymbol]![order.side]![price]!.makerIds[userId]!.length > 1){
+    //remove order id
+    PERPETUAL_ORDERBOOK_STORE[order.stockSymbol]![order.side]![price]!.makerIds[userId] = makerIds.filter(
+			(id: string) => id !== orderId
+		);
+
+    //updater order book
+    PERPETUAL_ORDERBOOK_STORE[order.stockSymbol]![order.side]![price]!.totalQuantity = totalOrderBookQuantity - order.quantity
+    PERPETUAL_ORDERBOOK_STORE[order.stockSymbol]![order.side]![price]!.remainingQuantity = totalOrderBookFillledQuantity - order.quantity
+  }
+
+  else if(PERPETUAL_ORDERBOOK_STORE[order.stockSymbol]![order.side]![price]!.makerIds[userId]!.length == 1){
+    //remove user id
+    delete PERPETUAL_ORDERBOOK_STORE[order.stockSymbol]![order.side]![price]!.makerIds[userId]
+
+    //updater order book
+    PERPETUAL_ORDERBOOK_STORE[order.stockSymbol]![order.side]![price]!.totalQuantity = totalOrderBookQuantity - order.quantity
+    PERPETUAL_ORDERBOOK_STORE[order.stockSymbol]![order.side]![price]!.remainingQuantity = totalOrderBookFillledQuantity - order.quantity
+  }
+
+  return PERPETUAL_ORDERBOOK_STORE[order.stockSymbol]
+
+}
