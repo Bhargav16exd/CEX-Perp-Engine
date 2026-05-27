@@ -5,6 +5,7 @@ export type EngineCommandType =
   | "update_balance"
   | "get_open_contract"
   | "create_stock_entity"
+  | "get_user_balance"
 
 export interface EngineRequestType {
   transactionId: string;

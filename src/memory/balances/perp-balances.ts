@@ -90,4 +90,9 @@ export const hanldeUserBalanceUpdate = (payload : UpdateBalanceInput):any => {
   return PERPETUAL_BALANCE_STORE[id]?.balance["inr"]
 }
 
+export const handleGetUserBalance = (payload:any):any => {
+  const { userId } = payload
+  return readBalanceStoreUserTotalBalance(userId) - readBalanceStoreUserLockedBalance(userId);
+}
+
 export default PERPETUAL_BALANCE_STORE;
