@@ -1,5 +1,5 @@
 import { FILLS } from "../../memory/fills/fills.js";
-import { addPriceToOrderBookIndex,PERPETUAL_ORDERBOOK_STORE} from "../../memory/orderbook/prep-orderbook.js"
+import { addPriceToOrderBookIndex,PERPETUAL_ORDERBOOK_STORE, PERPETUAL_ORDERBOOK_STORE_INDEX} from "../../memory/orderbook/prep-orderbook.js"
 import { ORDERS, updateOrderFullFilledQuantity } from "../../memory/orders/orders.js";
 import { queueMessageForAdapter } from "../../queue/db-publisher-client.js";
 import { OrderSide } from "../../types/perp-types.js"
@@ -190,6 +190,10 @@ export const handleCancelOrder = (payload:any):any => {
 
   if(order.quantity == PERPETUAL_ORDERBOOK_STORE[order.stockSymbol]![order.side]![price]?.totalQuantity ){
     delete PERPETUAL_ORDERBOOK_STORE[order.stockSymbol]![order.side]![price]
+    
+    //update index
+    PERPETUAL_ORDERBOOK_STORE_INDEX[order.stockSymbol]![order.side] = 
+      PERPETUAL_ORDERBOOK_STORE_INDEX[order.stockSymbol]![order.side].filter((price : number) => price != order.price);
   }
 
   else if(PERPETUAL_ORDERBOOK_STORE[order.stockSymbol]![order.side]![price]!.makerIds[userId]!.length > 1){
