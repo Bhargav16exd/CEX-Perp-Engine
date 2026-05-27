@@ -46,8 +46,5 @@ export const handleCreateOrderEntityRequest = (payload:any) => {
     long:[]
   }
 
-  console.log(PERPETUAL_ORDERBOOK_STORE)
-  console.log(PERPETUAL_ORDERBOOK_STORE_INDEX)
-
   return true
 }
