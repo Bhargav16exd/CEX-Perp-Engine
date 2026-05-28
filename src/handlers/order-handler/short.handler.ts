@@ -80,7 +80,10 @@ const handleOrderTypeLimit = (req: Request, res: Response, userId: string, stock
         entityType:AdapterEntityType.ORDER,
         payload:order
       })
-			return PERPETUAL_ORDERBOOK_STORE[stockSymbol];
+			return {
+        totalQuantity:quantity,
+        fillQuantity:0
+      };
 		}
 		else{
       //if there exist no LONG order at same price , create SHORT
@@ -90,7 +93,10 @@ const handleOrderTypeLimit = (req: Request, res: Response, userId: string, stock
         entityType:AdapterEntityType.ORDER,
         payload:order
       })
-			return PERPETUAL_ORDERBOOK_STORE[stockSymbol];
+			return {
+        totalQuantity:quantity,
+        fillQuantity:0
+      };
 		}
 	}
 
@@ -205,7 +211,10 @@ const handlePriceNotAvailableInLimitOrder = (req: Request, res: Response, userId
 		PERPETUAL_ORDERBOOK_STORE_INDEX[stockSymbol].long.pop();
 		count--;
 	}
-	return PERPETUAL_ORDERBOOK_STORE[stockSymbol];
+	return {
+    totalQuantity:userQuantity,
+    fillQuantity:finalfilledquantity
+  };
 }
 
 const handleOrderTypeMarket = () => {

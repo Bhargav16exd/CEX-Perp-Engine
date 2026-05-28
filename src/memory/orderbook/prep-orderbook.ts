@@ -48,3 +48,11 @@ export const handleCreateOrderEntityRequest = (payload:any) => {
 
   return true
 }
+
+export const getDepth = (payload:any):any=> {
+  const { stockSymbol } = payload;
+  return {
+    orderbook:PERPETUAL_ORDERBOOK_STORE[stockSymbol],
+    orderbookIndex:PERPETUAL_ORDERBOOK_STORE_INDEX[stockSymbol]
+  }
+}
