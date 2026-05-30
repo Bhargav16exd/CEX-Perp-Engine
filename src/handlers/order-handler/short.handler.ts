@@ -3,10 +3,11 @@ import { randomUUID } from "crypto";
 import { actionCreateShort, identifyOrderStatus, updateOrderOfMakershanldeContract} from "./utils.js";
 import PERPETUAL_BALANCE_STORE, { readBalanceStoreUserLockedBalance, readBalanceStoreUserTotalBalance, updateBalanceStoreUserLockedBalance } from "../../memory/balances/perp-balances.js";
 import { OrderSide, OrderType } from "../../types/perp-types.js";
-import { PERPETUAL_ORDERBOOK_STORE, PERPETUAL_ORDERBOOK_STORE_INDEX } from "../../memory/orderbook/prep-orderbook.js";
+import { PERPETUAL_ORDERBOOK_STORE, PERPETUAL_ORDERBOOK_STORE_INDEX, updateStockUpdateId } from "../../memory/orderbook/prep-orderbook.js";
 import { createOrder, fetchFullFilledQuantityFromOrderId, ORDERS, updateOrderFullFilledQuantity, type Order } from "../../memory/orders/orders.js";
 import { queueMessageForAdapter } from "../../queue/db-publisher-client.js";
 import { AdapterEntityType, AdapterMessageType } from "../../types/db-adapter-types.js";
+import { pushDirtyPrices } from "../../memory/dirty-prices/dirty-prices.js";
 
 
 export const hanldeShortOrders = (payload: OrderInputPayload):any => {
@@ -80,6 +81,8 @@ const handleOrderTypeLimit = (req: Request, res: Response, userId: string, stock
         entityType:AdapterEntityType.ORDER,
         payload:order
       })
+      pushDirtyPrices(stockSymbol, userPrice);
+      updateStockUpdateId(stockSymbol);
 			return {
         totalQuantity:quantity,
         fillQuantity:0
@@ -93,6 +96,7 @@ const handleOrderTypeLimit = (req: Request, res: Response, userId: string, stock
         entityType:AdapterEntityType.ORDER,
         payload:order
       })
+      pushDirtyPrices(stockSymbol, userPrice);
 			return {
         totalQuantity:quantity,
         fillQuantity:0
@@ -118,6 +122,7 @@ const handlePriceNotAvailableInLimitOrder = (req: Request, res: Response, userId
 		const price = PERPETUAL_ORDERBOOK_STORE_INDEX[stockSymbol].long[i]!;
 
 		if(price < userPrice &&  fullfilledQuantity != userQuantity){
+      pushDirtyPrices(stockSymbol, userPrice);
 			actionCreateShort(userId, stockSymbol, userPrice, (userQuantity - fullfilledQuantity), orderId);
 			break;
 		}
@@ -147,7 +152,8 @@ const handlePriceNotAvailableInLimitOrder = (req: Request, res: Response, userId
 
 			//delete 
 			delete PERPETUAL_ORDERBOOK_STORE[stockSymbol].long[price];
-
+      pushDirtyPrices(stockSymbol, price);
+      updateStockUpdateId(stockSymbol);
 			count++;
 			break;
 		}
@@ -165,7 +171,8 @@ const handlePriceNotAvailableInLimitOrder = (req: Request, res: Response, userId
 			//update remaining quanitity in the stock
 			const remainingStockQuantity = longInfo.remainingQuantity;
 			PERPETUAL_ORDERBOOK_STORE[stockSymbol].long[price]!.remainingQuantity = remainingStockQuantity - (userQuantity - fullfilledQuantity);
-
+      updateStockUpdateId(stockSymbol);
+      pushDirtyPrices(stockSymbol, price);
 			break;
 		}
 
@@ -184,11 +191,15 @@ const handlePriceNotAvailableInLimitOrder = (req: Request, res: Response, userId
 
 		if(price == userPrice){
 			actionCreateShort(userId, stockSymbol, userPrice, (userQuantity - fullfilledQuantity), orderId);
-		}
+		}else{
+      updateStockUpdateId(stockSymbol);
+    }
 
 		if(price == PERPETUAL_ORDERBOOK_STORE_INDEX[stockSymbol].long[0]){
 			actionCreateShort(userId, stockSymbol, userPrice, (userQuantity - fullfilledQuantity), orderId);
-		}
+		}else{
+      updateStockUpdateId(stockSymbol);
+    }
 
     let messageType = AdapterMessageType.INSERT;
     order.status = identifyOrderStatus(userQuantity, finalfilledquantity)!;
@@ -203,7 +214,7 @@ const handlePriceNotAvailableInLimitOrder = (req: Request, res: Response, userId
       entityType:AdapterEntityType.ORDER,
       payload:order
     })
-
+    pushDirtyPrices(stockSymbol, price);
 		count ++;
 	}
 

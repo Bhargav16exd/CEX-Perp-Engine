@@ -2,6 +2,7 @@ import type { PerpetualOrderbookIndexStoreType, PerpetualOrderbookStoreType } fr
 
 export const PERPETUAL_ORDERBOOK_STORE: PerpetualOrderbookStoreType = {
 	sol: {
+    updateId:0,
 		short:{},
 		long:{}
 }
@@ -37,6 +38,7 @@ export const handleCreateOrderEntityRequest = (payload:any) => {
   }
 
   PERPETUAL_ORDERBOOK_STORE[stockSymbol] = {
+    updateId:0,
 		short:{},
 		long:{}
   }
@@ -52,7 +54,15 @@ export const handleCreateOrderEntityRequest = (payload:any) => {
 export const getDepth = (payload:any):any=> {
   const { stockSymbol } = payload;
   return {
+    updateId:getStockUpdateId(stockSymbol),
     orderbook:PERPETUAL_ORDERBOOK_STORE[stockSymbol],
     orderbookIndex:PERPETUAL_ORDERBOOK_STORE_INDEX[stockSymbol]
   }
+}
+
+export const getStockUpdateId = (stockSymbol:string) => {
+  return PERPETUAL_ORDERBOOK_STORE[stockSymbol]?.updateId!
+}
+export const updateStockUpdateId =  (stockSymbol:string) => {
+  PERPETUAL_ORDERBOOK_STORE[stockSymbol]!.updateId! = getStockUpdateId(stockSymbol) + 1;
 }

@@ -12,6 +12,7 @@ interface StockSpecificOrderbookIndexStoreType {
 }
 
 interface StockSpecificOrderbookStoreType {
+    updateId:number,
     short:ShortType,
     long:LongType
 }

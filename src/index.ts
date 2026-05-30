@@ -2,6 +2,7 @@ import dotenv from "dotenv";
 import { connectRedis, publisher, subscriber } from "./queue/queue-client.js";
 import type { EngineRequestType, EngineResponseType } from "./types/engine-types.js";
 import { engineRequestHanlder } from "./request-handler/request-hanlder.js";
+import { publishDirtyPrices } from "./handlers/order-handler/delta.handler.js";
 
 dotenv.config();
 
@@ -14,6 +15,8 @@ const sendResponse = async (queue:string, payload:EngineResponseType) => {
   await publisher.lPush(queue, JSON.stringify(payload));
 }
 
+publishDirtyPrices();
+
 //process request
 for(;;){
   const entity = await subscriber.brPop(ENGINE_REQUEST_QUEUE, 5);
@@ -22,7 +25,6 @@ for(;;){
 
   const parsedRequest = JSON.parse(entity.element) as EngineRequestType;
 
-  
   try {
     const engineResponse = engineRequestHanlder(parsedRequest);
     const payload:EngineResponseType = {
@@ -38,5 +40,5 @@ for(;;){
       error: error instanceof Error ? error.message : "engine_error"
     })
   }
-
 }
+

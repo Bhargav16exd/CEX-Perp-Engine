@@ -1,5 +1,5 @@
 import { FILLS } from "../../memory/fills/fills.js";
-import { addPriceToOrderBookIndex,PERPETUAL_ORDERBOOK_STORE, PERPETUAL_ORDERBOOK_STORE_INDEX} from "../../memory/orderbook/prep-orderbook.js"
+import { addPriceToOrderBookIndex,PERPETUAL_ORDERBOOK_STORE, PERPETUAL_ORDERBOOK_STORE_INDEX, updateStockUpdateId} from "../../memory/orderbook/prep-orderbook.js"
 import { ORDERS, updateOrderFullFilledQuantity } from "../../memory/orders/orders.js";
 import { queueMessageForAdapter } from "../../queue/db-publisher-client.js";
 import { OrderSide } from "../../types/perp-types.js"
@@ -18,7 +18,7 @@ export const actionCreateLong = (userId:string, stockSymbol:string, userPrice:nu
 		},
 		takerIds:{}
 	}
-
+  updateStockUpdateId(stockSymbol);
 	addPriceToOrderBookIndex(stockSymbol, "long", userPrice)
 	return true
 }
@@ -35,7 +35,7 @@ export const actionCreateShort = (userId:string, stockSymbol:string, userPrice:n
 		},
 		takerIds:{}
 	}
-
+  updateStockUpdateId(stockSymbol);
 	addPriceToOrderBookIndex(stockSymbol, "short", userPrice)
 
 	return true
@@ -88,7 +88,8 @@ export const updateOrderOfMakershanldeContract = (userIds: Record<string,Array<s
             makerOrderID:orderId,
             takerOrderID:takerOrderID,
             quantity:order!.quantity,
-            market:order!.stockSymbol,
+            symbol:order!.symbol,
+            market:"perp",
             price:order!.price
           }
         })
@@ -117,7 +118,8 @@ export const updateOrderOfMakershanldeContract = (userIds: Record<string,Array<s
             makerOrderID:orderId,
             takerOrderID:takerOrderID,
             quantity:(quantity - fullfilledQuantity),
-            market:order!.stockSymbol,
+            symbol:order!.symbol,
+            market:"perp",
             price:order!.price
           }
         })
@@ -175,47 +177,47 @@ export const handleCancelOrder = (payload:any):any => {
 
   const price = order.price;  
 
-  if(!PERPETUAL_ORDERBOOK_STORE[order.stockSymbol]![order.side][price]){
+  if(!PERPETUAL_ORDERBOOK_STORE[order.symbol]![order.side][price]){
     throw new Error("Invalid Order Price");
   }
 
   //check if userid exist in makers
-  if(!PERPETUAL_ORDERBOOK_STORE[order.stockSymbol]![order.side]![price]?.makerIds[userId]){
+  if(!PERPETUAL_ORDERBOOK_STORE[order.symbol]![order.side]![price]?.makerIds[userId]){
     throw new Error("Invalid User Id");
   }
 
-  const totalOrderBookQuantity = PERPETUAL_ORDERBOOK_STORE[order.stockSymbol]![order.side]![price]?.totalQuantity!
-  const totalOrderBookFillledQuantity = PERPETUAL_ORDERBOOK_STORE[order.stockSymbol]![order.side]![price]?.remainingQuantity!
-  const makerIds = PERPETUAL_ORDERBOOK_STORE[order.stockSymbol]![order.side]![price]!.makerIds[userId]!
+  const totalOrderBookQuantity = PERPETUAL_ORDERBOOK_STORE[order.symbol]![order.side]![price]?.totalQuantity!
+  const totalOrderBookFillledQuantity = PERPETUAL_ORDERBOOK_STORE[order.symbol]![order.side]![price]?.remainingQuantity!
+  const makerIds = PERPETUAL_ORDERBOOK_STORE[order.symbol]![order.side]![price]!.makerIds[userId]!
 
-  if(order.quantity == PERPETUAL_ORDERBOOK_STORE[order.stockSymbol]![order.side]![price]?.totalQuantity ){
-    delete PERPETUAL_ORDERBOOK_STORE[order.stockSymbol]![order.side]![price]
+  if(order.quantity == PERPETUAL_ORDERBOOK_STORE[order.symbol]![order.side]![price]?.totalQuantity ){
+    delete PERPETUAL_ORDERBOOK_STORE[order.symbol]![order.side]![price]
     
     //update index
-    PERPETUAL_ORDERBOOK_STORE_INDEX[order.stockSymbol]![order.side] = 
-      PERPETUAL_ORDERBOOK_STORE_INDEX[order.stockSymbol]![order.side].filter((price : number) => price != order.price);
+    PERPETUAL_ORDERBOOK_STORE_INDEX[order.symbol]![order.side] = 
+      PERPETUAL_ORDERBOOK_STORE_INDEX[order.symbol]![order.side].filter((price : number) => price != order.price);
   }
 
-  else if(PERPETUAL_ORDERBOOK_STORE[order.stockSymbol]![order.side]![price]!.makerIds[userId]!.length > 1){
+  else if(PERPETUAL_ORDERBOOK_STORE[order.symbol]![order.side]![price]!.makerIds[userId]!.length > 1){
     //remove order id
-    PERPETUAL_ORDERBOOK_STORE[order.stockSymbol]![order.side]![price]!.makerIds[userId] = makerIds.filter(
+    PERPETUAL_ORDERBOOK_STORE[order.symbol]![order.side]![price]!.makerIds[userId] = makerIds.filter(
 			(id: string) => id !== orderId
 		);
 
     //updater order book
-    PERPETUAL_ORDERBOOK_STORE[order.stockSymbol]![order.side]![price]!.totalQuantity = totalOrderBookQuantity - order.quantity
-    PERPETUAL_ORDERBOOK_STORE[order.stockSymbol]![order.side]![price]!.remainingQuantity = totalOrderBookFillledQuantity - order.quantity
+    PERPETUAL_ORDERBOOK_STORE[order.symbol]![order.side]![price]!.totalQuantity = totalOrderBookQuantity - order.quantity
+    PERPETUAL_ORDERBOOK_STORE[order.symbol]![order.side]![price]!.remainingQuantity = totalOrderBookFillledQuantity - order.quantity
   }
 
-  else if(PERPETUAL_ORDERBOOK_STORE[order.stockSymbol]![order.side]![price]!.makerIds[userId]!.length == 1){
+  else if(PERPETUAL_ORDERBOOK_STORE[order.symbol]![order.side]![price]!.makerIds[userId]!.length == 1){
     //remove user id
-    delete PERPETUAL_ORDERBOOK_STORE[order.stockSymbol]![order.side]![price]!.makerIds[userId]
+    delete PERPETUAL_ORDERBOOK_STORE[order.symbol]![order.side]![price]!.makerIds[userId]
 
     //updater order book
-    PERPETUAL_ORDERBOOK_STORE[order.stockSymbol]![order.side]![price]!.totalQuantity = totalOrderBookQuantity - order.quantity
-    PERPETUAL_ORDERBOOK_STORE[order.stockSymbol]![order.side]![price]!.remainingQuantity = totalOrderBookFillledQuantity - order.quantity
+    PERPETUAL_ORDERBOOK_STORE[order.symbol]![order.side]![price]!.totalQuantity = totalOrderBookQuantity - order.quantity
+    PERPETUAL_ORDERBOOK_STORE[order.symbol]![order.side]![price]!.remainingQuantity = totalOrderBookFillledQuantity - order.quantity
   }
 
-  return PERPETUAL_ORDERBOOK_STORE[order.stockSymbol]
+  return PERPETUAL_ORDERBOOK_STORE[order.symbol]
 
 }

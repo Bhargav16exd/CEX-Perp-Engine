@@ -16,7 +16,8 @@ export type Order = {
 
 	userId:string,
 
-  stockSymbol:string,
+  symbol:string,
+  market:string,
 }
 
 export const APPEND_ONLY_ORDERS : Array<Order> = [];
@@ -41,7 +42,8 @@ export const createOrder = (orderId:string, stockSymbol:string, price:number, qu
 		filledQuantity:0,
     status:"open",
 		userId,
-    stockSymbol
+    symbol:stockSymbol,
+    market:"perp"
 	}
   return ORDERS[orderId]
 }
