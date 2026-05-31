@@ -2,6 +2,8 @@
 type FillType = {
   makerID: string;
   takerID: string;
+  makerSide:string;
+  takerSide:string;
   makerOrderID: string;
   takerOrderID: string;
   quantity: number;

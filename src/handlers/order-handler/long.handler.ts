@@ -3,10 +3,11 @@ import { actionCreateLong, identifyOrderStatus, updateOrderOfMakershanldeContrac
 import { OrderSide, OrderType } from "../../types/perp-types.js";
 import { readBalanceStoreUserLockedBalance, readBalanceStoreUserTotalBalance, updateBalanceStoreUserLockedBalance } from "../../memory/balances/perp-balances.js";
 import { PERPETUAL_ORDERBOOK_STORE, PERPETUAL_ORDERBOOK_STORE_INDEX, updateStockUpdateId } from "../../memory/orderbook/prep-orderbook.js";
-import { createOrder, fetchFullFilledQuantityFromOrderId, ORDERS, updateOrderFullFilledQuantity, type Order } from "../../memory/orders/orders.js";
+import { ACTIVE_ORDER_INDEX, createOrder, fetchFullFilledQuantityFromOrderId, ORDERS, removeUserOrderInIndex, updateOrderFullFilledQuantity, type Order } from "../../memory/orders/orders.js";
 import { queueMessageForAdapter } from "../../queue/db-publisher-client.js";
 import { AdapterEntityType, AdapterMessageType } from "../../types/db-adapter-types.js";
 import { pushDirtyPrices } from "../../memory/dirty-prices/dirty-prices.js";
+import { CONTRACT_STORE } from "../../memory/contracts/contracts-store.js";
 
 export type OrderInputPayload = {
 	req:Request,
@@ -235,6 +236,7 @@ const handlePriceNotAvailableInLimitOrder = (req: Request, res: Response, userId
 
   if(order.status === "closed"){
     delete ORDERS[orderId];
+    removeUserOrderInIndex(userId, orderId);
     messageType = AdapterMessageType.APPEND_ONLY
   }
 

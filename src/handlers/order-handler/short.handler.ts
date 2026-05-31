@@ -4,10 +4,11 @@ import { actionCreateShort, identifyOrderStatus, updateOrderOfMakershanldeContra
 import PERPETUAL_BALANCE_STORE, { readBalanceStoreUserLockedBalance, readBalanceStoreUserTotalBalance, updateBalanceStoreUserLockedBalance } from "../../memory/balances/perp-balances.js";
 import { OrderSide, OrderType } from "../../types/perp-types.js";
 import { PERPETUAL_ORDERBOOK_STORE, PERPETUAL_ORDERBOOK_STORE_INDEX, updateStockUpdateId } from "../../memory/orderbook/prep-orderbook.js";
-import { createOrder, fetchFullFilledQuantityFromOrderId, ORDERS, updateOrderFullFilledQuantity, type Order } from "../../memory/orders/orders.js";
+import { ACTIVE_ORDER_INDEX, createOrder, fetchFullFilledQuantityFromOrderId, ORDERS, removeUserOrderInIndex, updateOrderFullFilledQuantity, type Order } from "../../memory/orders/orders.js";
 import { queueMessageForAdapter } from "../../queue/db-publisher-client.js";
 import { AdapterEntityType, AdapterMessageType } from "../../types/db-adapter-types.js";
 import { pushDirtyPrices } from "../../memory/dirty-prices/dirty-prices.js";
+import { CONTRACT_STORE } from "../../memory/contracts/contracts-store.js";
 
 
 export const hanldeShortOrders = (payload: OrderInputPayload):any => {
@@ -201,19 +202,6 @@ const handlePriceNotAvailableInLimitOrder = (req: Request, res: Response, userId
       updateStockUpdateId(stockSymbol);
     }
 
-    let messageType = AdapterMessageType.INSERT;
-    order.status = identifyOrderStatus(userQuantity, finalfilledquantity)!;
-
-    if(order.status === "closed"){
-      delete ORDERS[orderId];
-      messageType = AdapterMessageType.APPEND_ONLY
-    }
-    
-    queueMessageForAdapter({
-      messageType,
-      entityType:AdapterEntityType.ORDER,
-      payload:order
-    })
     pushDirtyPrices(stockSymbol, price);
 		count ++;
 	}
@@ -222,6 +210,22 @@ const handlePriceNotAvailableInLimitOrder = (req: Request, res: Response, userId
 		PERPETUAL_ORDERBOOK_STORE_INDEX[stockSymbol].long.pop();
 		count--;
 	}
+
+  let messageType = AdapterMessageType.INSERT;
+  order.status = identifyOrderStatus(userQuantity, finalfilledquantity)!;
+
+  if(order.status === "closed"){
+    delete ORDERS[orderId];
+    removeUserOrderInIndex(userId, orderId);
+    messageType = AdapterMessageType.APPEND_ONLY
+  }
+  
+  queueMessageForAdapter({
+    messageType,
+    entityType:AdapterEntityType.ORDER,
+    payload:order
+  })
+
 	return {
     totalQuantity:userQuantity,
     fillQuantity:finalfilledquantity

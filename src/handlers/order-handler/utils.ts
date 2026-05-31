@@ -1,6 +1,6 @@
 import { FILLS } from "../../memory/fills/fills.js";
 import { addPriceToOrderBookIndex,PERPETUAL_ORDERBOOK_STORE, PERPETUAL_ORDERBOOK_STORE_INDEX, updateStockUpdateId} from "../../memory/orderbook/prep-orderbook.js"
-import { ORDERS, updateOrderFullFilledQuantity } from "../../memory/orders/orders.js";
+import { ORDERS, removeUserOrderInIndex, updateOrderFullFilledQuantity, updateOrderStatus } from "../../memory/orders/orders.js";
 import { queueMessageForAdapter } from "../../queue/db-publisher-client.js";
 import { OrderSide } from "../../types/perp-types.js"
 import { hanldeContracts } from "../contract-handler/contract.handler.js"
@@ -73,21 +73,26 @@ export const updateOrderOfMakershanldeContract = (userIds: Record<string,Array<s
 			const order = ORDERS[orderId];  
       let pos = 0;
 
-			if(order?.quantity! <= (quantity - fullfilledQuantity)){
+      const availableQty = order?.quantity! - order?.filledQuantity!
+
+			if(availableQty <= (quantity - fullfilledQuantity)){
 				updateOrderFullFilledQuantity(orderId, order?.quantity!);
-				fullfilledQuantity = fullfilledQuantity + order?.quantity!
-        pos = order?.quantity!
+        updateOrderStatus(orderId, "closed");
+				fullfilledQuantity = fullfilledQuantity + availableQty!
+        pos = availableQty
 
         //push fills
         queueMessageForAdapter({
           messageType:AdapterMessageType.APPEND_ONLY,
           entityType:AdapterEntityType.FILL,
           payload:{
+            makerSide:order?.side,
+            takerSide: ORDERS[takerOrderID]?.side,
             makerID:userId,
             takerID:takerId,
             makerOrderID:orderId,
             takerOrderID:takerOrderID,
-            quantity:order!.quantity,
+            quantity:availableQty,
             symbol:order!.symbol,
             market:"perp",
             price:order!.price
@@ -104,8 +109,12 @@ export const updateOrderOfMakershanldeContract = (userIds: Record<string,Array<s
             status:"closed"
           }
         })
+
+        delete ORDERS[orderId];
+        removeUserOrderInIndex(userId, orderId);
 			}
 			else{
+        
 				updateOrderFullFilledQuantity(orderId, order?.filledQuantity! + (quantity - fullfilledQuantity))
         pos = (quantity - fullfilledQuantity);
 
@@ -113,6 +122,8 @@ export const updateOrderOfMakershanldeContract = (userIds: Record<string,Array<s
           messageType:AdapterMessageType.APPEND_ONLY,
           entityType:AdapterEntityType.FILL,
           payload:{
+            makerSide:order?.side,
+            takerSide: ORDERS[takerOrderID]?.side,
             makerID:userId,
             takerID:takerId,
             makerOrderID:orderId,
@@ -136,6 +147,7 @@ export const updateOrderOfMakershanldeContract = (userIds: Record<string,Array<s
         })
 
         fullfilledQuantity = fullfilledQuantity + (quantity - fullfilledQuantity)
+        updateOrderStatus(orderId, "partialfill");
 			}
 
       if(OrderSideInput == OrderSide.LONG){
@@ -159,7 +171,6 @@ export const identifyOrderStatus = (inputQuantity:number, fullfilledquantity:num
     return "partialfill"
   }
 }
-
 
 export const handleCancelOrder = (payload:any):any => {
 
@@ -195,7 +206,7 @@ export const handleCancelOrder = (payload:any):any => {
     
     //update index
     PERPETUAL_ORDERBOOK_STORE_INDEX[order.symbol]![order.side] = 
-      PERPETUAL_ORDERBOOK_STORE_INDEX[order.symbol]![order.side].filter((price : number) => price != order.price);
+    PERPETUAL_ORDERBOOK_STORE_INDEX[order.symbol]![order.side].filter((price : number) => price != order.price);
   }
 
   else if(PERPETUAL_ORDERBOOK_STORE[order.symbol]![order.side]![price]!.makerIds[userId]!.length > 1){
@@ -218,6 +229,21 @@ export const handleCancelOrder = (payload:any):any => {
     PERPETUAL_ORDERBOOK_STORE[order.symbol]![order.side]![price]!.remainingQuantity = totalOrderBookFillledQuantity - order.quantity
   }
 
-  return PERPETUAL_ORDERBOOK_STORE[order.symbol]
+  updateOrderStatus(orderId, "canceled");
+  removeUserOrderInIndex(userId, orderId);
 
+  delete ORDERS[orderId];
+
+  //push update order
+  queueMessageForAdapter({
+    messageType:AdapterMessageType.UPDATE,
+    entityType:AdapterEntityType.ORDER,
+    payload:{
+      orderId,
+      quantity:order.quantity,
+      status:"canceled"
+    }
+  })
+  
+  return PERPETUAL_ORDERBOOK_STORE[order.symbol]
 }
