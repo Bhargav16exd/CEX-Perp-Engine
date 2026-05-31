@@ -1,6 +1,6 @@
 import type { Side, Type } from "../orderbook/prep-orderbook.js";
 
-type OrderStatus = "open" | "canceled" | "partialfill" | "closed"
+type OrderStatus = "open" | "cancelled" | "partialfill" | "closed"
 
 export type Order = {
 	orderId:string,

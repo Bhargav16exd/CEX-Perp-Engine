@@ -1,6 +1,6 @@
 import { FILLS } from "../../memory/fills/fills.js";
-import { addPriceToOrderBookIndex,PERPETUAL_ORDERBOOK_STORE, PERPETUAL_ORDERBOOK_STORE_INDEX, updateStockUpdateId} from "../../memory/orderbook/prep-orderbook.js"
-import { ORDERS, removeUserOrderInIndex, updateOrderFullFilledQuantity, updateOrderStatus } from "../../memory/orders/orders.js";
+import { addPriceToOrderBookIndex,PERPETUAL_ORDERBOOK_STORE, PERPETUAL_ORDERBOOK_STORE_INDEX, updateStockUpdateId, type Side} from "../../memory/orderbook/prep-orderbook.js"
+import { ORDERS, removeUserOrderInIndex, updateOrderFullFilledQuantity, updateOrderStatus, type Order } from "../../memory/orders/orders.js";
 import { queueMessageForAdapter } from "../../queue/db-publisher-client.js";
 import { OrderSide } from "../../types/perp-types.js"
 import { hanldeContracts } from "../contract-handler/contract.handler.js"
@@ -111,6 +111,7 @@ export const updateOrderOfMakershanldeContract = (userIds: Record<string,Array<s
         })
 
         delete ORDERS[orderId];
+        removeMakerOrderId(order?.symbol!, order?.side!, order?.price!, userId!, orderId!);
         removeUserOrderInIndex(userId, orderId, order?.symbol!);
 			}
 			else{
@@ -229,7 +230,7 @@ export const handleCancelOrder = (payload:any):any => {
     PERPETUAL_ORDERBOOK_STORE[order.symbol]![order.side]![price]!.remainingQuantity = totalOrderBookFillledQuantity - order.quantity
   }
 
-  updateOrderStatus(orderId, "canceled");
+  updateOrderStatus(orderId, "cancelled");
   removeUserOrderInIndex(userId, orderId, order?.symbol!);
 
   delete ORDERS[orderId];
@@ -246,4 +247,18 @@ export const handleCancelOrder = (payload:any):any => {
   })
   
   return PERPETUAL_ORDERBOOK_STORE[order.symbol]
+}
+
+const removeMakerOrderId = (symbol:string,side:Side,price:number,userId:string,orderId:string) =>{
+  const makerIds = PERPETUAL_ORDERBOOK_STORE[symbol]![side]![price]!.makerIds[userId]!
+  PERPETUAL_ORDERBOOK_STORE[symbol]![side]![price]!.makerIds[userId] = makerIds.filter(
+		(id: string) => id !== orderId
+	);
+}
+
+export const removeTakerOrderId = (symbol:string,side:Side,price:number,userId:string,orderId:string) =>{
+  const takerIds = PERPETUAL_ORDERBOOK_STORE[symbol]![side]![price]!.takerIds[userId]!
+  PERPETUAL_ORDERBOOK_STORE[symbol]![side]![price]!.takerIds[userId] = takerIds.filter(
+		(id: string) => id !== orderId
+	);
 }
