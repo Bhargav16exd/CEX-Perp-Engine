@@ -216,7 +216,7 @@ const handlePriceNotAvailableInLimitOrder = (req: Request, res: Response, userId
 
   if(order.status === "closed"){
     delete ORDERS[orderId];
-    removeUserOrderInIndex(userId, orderId);
+    removeUserOrderInIndex(userId, orderId, stockSymbol);
     messageType = AdapterMessageType.APPEND_ONLY
   }
   

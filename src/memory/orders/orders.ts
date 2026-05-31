@@ -18,12 +18,22 @@ export type Order = {
 
   symbol:string,
   market:string,
+  createdAt:string
 }
 
 export const APPEND_ONLY_ORDERS : Array<Order> = [];
 
 export const ORDERS : Record<string, Order> = {};
-export const ACTIVE_ORDER_INDEX: Map<string, Array<string>> = new Map();
+
+/*
+  {
+    "userId":{ 
+      "SOL_USDC":["orderId"] 
+    }
+  }
+*/
+
+export const ACTIVE_ORDER_INDEX: Map<string, Map<string, Array<string>>> = new Map();
 
 export const fetchOrderFromOrderId = (orderId:string) => {
 	return ORDERS[orderId];
@@ -44,9 +54,10 @@ export const createOrder = (orderId:string, stockSymbol:string, price:number, qu
     status:"open",
 		userId,
     symbol:stockSymbol,
-    market:"perp"
+    market:"perp",
+    createdAt:new Date().toLocaleString()
 	}
-  putUserOrderInIndex(userId, orderId);
+  putUserOrderInIndex(userId, orderId, stockSymbol);
   return ORDERS[orderId]
 }
 
@@ -60,46 +71,77 @@ export const updateOrderStatus = (orderId:string, status:OrderStatus) => {
 	ORDERS[orderId].status = status
 }
 
-export const getUserActiveOrders = (userId:string) => {
-  const orderIds = ACTIVE_ORDER_INDEX.get(userId);
-  if(!orderIds){
+export const getUserActiveOrders = (userId:string, symbol:string) => {
+  
+  const userOrders = ACTIVE_ORDER_INDEX.get(userId);
+  if(!userOrders){
     return [];
   }
   
-  const activeOrders = orderIds.map((id)=>{
+  const symbolOrders = userOrders.get(symbol);
+
+  if(!symbolOrders){
+    return []
+  }
+
+  const activeOrders = symbolOrders.map((id)=>{
     return ORDERS[id]!
   })
   
   return activeOrders; 
 }
 
-export const putUserOrderInIndex = (userId:string, orderId:string) =>{
-  const userExist = ACTIVE_ORDER_INDEX.get(userId);
-  if(!userExist){
-    ACTIVE_ORDER_INDEX.set(userId,[orderId]);
-    return
+export const putUserOrderInIndex = (userId:string, orderId:string, symbol:string) =>{
+  let userOrders = ACTIVE_ORDER_INDEX.get(userId);
+
+  if(!userOrders){
+    userOrders = new Map()  
+    ACTIVE_ORDER_INDEX.set(userId, userOrders);
   }
-  userExist.push(orderId);
+
+  let symbolOrders = userOrders.get(symbol);
+
+  if(!symbolOrders){
+    symbolOrders = [];
+    userOrders.set(symbol, symbolOrders);
+  }
+
+  symbolOrders.push(orderId);
 }
 
-export const removeUserOrderInIndex = (userId:string, orderId:string) =>{
-  const userExist = ACTIVE_ORDER_INDEX.get(userId);
-  if(!userExist){
+export const removeUserOrderInIndex = (userId:string, orderId:string, symbol:string) =>{
+  
+  const userOrders = ACTIVE_ORDER_INDEX.get(userId);
+  
+  if(!userOrders){
     return
   }
 
-  if(userExist.length === 1 && userExist[0] === orderId ){
+  const symbolOrder = userOrders.get(symbol)
+
+  if(!symbolOrder){
+    return
+  }
+
+  const updatedOrders = symbolOrder.filter((id:string)=> id != orderId);
+
+  if(updatedOrders.length === 0){
+    userOrders.delete(symbol);
+  }
+  else{
+    userOrders.set(symbol, updatedOrders);
+  }
+
+  // Remove user if no symbols left
+  if (userOrders.size === 0) {
     ACTIVE_ORDER_INDEX.delete(userId);
-    return
   }
-
-  userExist.filter((id:string)=> id != orderId);
 }
 
 export const handleOrderOpenOrderRequest = (payload:any) => {
-  const { id } = payload;
+  const { id, symbol } = payload;
   if(!id){
     throw new Error("Invalid Input");
   }
-  return getUserActiveOrders(id);
+  return getUserActiveOrders(id, symbol);
 }

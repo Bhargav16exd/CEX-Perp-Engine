@@ -111,7 +111,7 @@ export const updateOrderOfMakershanldeContract = (userIds: Record<string,Array<s
         })
 
         delete ORDERS[orderId];
-        removeUserOrderInIndex(userId, orderId);
+        removeUserOrderInIndex(userId, orderId, order?.symbol!);
 			}
 			else{
         
@@ -230,7 +230,7 @@ export const handleCancelOrder = (payload:any):any => {
   }
 
   updateOrderStatus(orderId, "canceled");
-  removeUserOrderInIndex(userId, orderId);
+  removeUserOrderInIndex(userId, orderId, order?.symbol!);
 
   delete ORDERS[orderId];
 
