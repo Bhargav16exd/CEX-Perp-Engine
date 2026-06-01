@@ -1,68 +1,7 @@
-import type { PerpetualBalanceStoreType, UpdateBalanceInput } from "./perp-balances-types.js";
+import type { BalanceStoreType, UpdateBalanceInput } from "./perp-balances-types.js";
 
-const PERPETUAL_BALANCE_STORE: PerpetualBalanceStoreType = {
-	"14":{
-		balance :{
-		"inr":{
-				total:10000,
-				locked:0,
-			}
-		}
-	},
-    "13":{
-		balance :{
-		"inr":{
-				total:10000,
-				locked:0,
-			}
-		}
-	},
-    "12":{
-		balance :{
-		"inr":{
-				total:10000,
-				locked:0,
-			}
-		}
-	},
-	"11":{
-			balance: {
-			"inr": {
-					total: 10000,
-					locked: 0,
-			},
-			}
-	}
-};
+const BALANCE_STORE: BalanceStoreType = {};
 
-interface User {
-    username: string;
-    password: string;
-    balance: number;
-    id: number;
-}
-
-export const initUserInBalanceStore = (user:User) => {  
-    PERPETUAL_BALANCE_STORE[user.id] = {
-        balance:{
-            "inr":{
-                total:user.balance,
-                locked:0,
-            },
-            
-        }
-    }
-}
-
-//@ts-ignore
-// export const putBackupInBalanceStore = (data) => {
-//     // clear existing keys
-//     Object.keys(BALANCE_STORE).forEach(key => {
-//         delete BALANCE_STORE[key]
-//     })
-
-//     Object.assign(BALANCE_STORE, data)
-// }
 export const readBalanceStoreUserTotalBalance = (userId:string) => {
     //@ts-ignore
     return PERPETUAL_BALANCE_STORE[userId].balance["inr"].total
@@ -95,4 +34,25 @@ export const handleGetUserBalance = (payload:any):any => {
   return readBalanceStoreUserTotalBalance(userId) - readBalanceStoreUserLockedBalance(userId);
 }
 
-export default PERPETUAL_BALANCE_STORE;
+/* 
+  ------ QUEUE REQUEST HANDLERS ------
+  ------------------------------------
+*/
+
+export const handle_INIT_USER_BALANCE_Request = (payload:any) => {
+  
+  const { id } = payload;
+  if( !id ) throw new Error("Invalid Input");
+
+  BALANCE_STORE[id] = {
+    balance:{
+      "inr":{
+        total:0,
+        locked:0
+      }
+    },
+  }
+  return true
+}
+
+export default BALANCE_STORE;

@@ -1,4 +1,4 @@
-export interface PerpetualBalanceStoreType {
+export interface BalanceStoreType {
   [userId:string]:BalanceStoreUserEntity;
 }
 
