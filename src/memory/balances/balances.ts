@@ -1,24 +1,24 @@
-import type { BalanceStoreType, UpdateBalanceInput } from "./perp-balances-types.js";
+import type { BalanceStoreType, UpdateBalanceInput } from "./balances-types.js";
 
 const BALANCE_STORE: BalanceStoreType = {};
 
 export const readBalanceStoreUserTotalBalance = (userId:string) => {
     //@ts-ignore
-    return PERPETUAL_BALANCE_STORE[userId].balance["inr"].total
+    return BALANCE_STORE[userId].balance["inr"].total
 }
 export const readBalanceStoreUserLockedBalance = (userId:string) => {
     //@ts-ignore
-    return PERPETUAL_BALANCE_STORE[userId].balance["inr"].locked
+    return BALANCE_STORE[userId].balance["inr"].locked
 }
 
 export const updateBalanceStoreUserTotalBalance = (userId:string, value:number) => {
     //@ts-ignore
-    PERPETUAL_BALANCE_STORE[userId].balance["inr"].total = value
+    BALANCE_STORE[userId].balance["inr"].total = value
 }
 
 export const updateBalanceStoreUserLockedBalance = (userId:string, value:number) => {
     //@ts-ignore
-    PERPETUAL_BALANCE_STORE[userId].balance["inr"].locked = value
+    BALANCE_STORE[userId].balance["inr"].locked = value
 }
 
 export const hanldeUserBalanceUpdate = (payload : UpdateBalanceInput):any => {
@@ -26,7 +26,7 @@ export const hanldeUserBalanceUpdate = (payload : UpdateBalanceInput):any => {
   const userTotalBalance = readBalanceStoreUserTotalBalance(id)!;
   updateBalanceStoreUserTotalBalance(id, userTotalBalance + balance)
   //@ts-ignore
-  return PERPETUAL_BALANCE_STORE[id]?.balance["inr"]
+  return BALANCE_STORE[id]?.balance["inr"]
 }
 
 export const handleGetUserBalance = (payload:any):any => {
@@ -53,6 +53,25 @@ export const handle_INIT_USER_BALANCE_Request = (payload:any) => {
     },
   }
   return true
+}
+
+export const handle_UPDATE_USER_BALANCE_Request = (payload:any) =>{
+  const { id, balance } = payload
+  if(!id || !balance){
+    throw new Error("Invalid Inputs");
+  }
+  
+  const userBalance = readBalanceStoreUserTotalBalance(id)
+
+  if(userBalance === undefined){
+    throw new Error("Invalid User Id");
+  }
+
+  updateBalanceStoreUserTotalBalance(id, userBalance + balance);
+
+  return {
+    balance:readBalanceStoreUserTotalBalance(id)
+  }
 }
 
 export default BALANCE_STORE;

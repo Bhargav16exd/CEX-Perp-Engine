@@ -1,5 +1,5 @@
 import { randomUUID } from "crypto";
-import { readBalanceStoreUserLockedBalance, readBalanceStoreUserTotalBalance, updateBalanceStoreUserLockedBalance, updateBalanceStoreUserTotalBalance } from "../../memory/balances/perp-balances.js";
+import { readBalanceStoreUserLockedBalance, readBalanceStoreUserTotalBalance, updateBalanceStoreUserLockedBalance, updateBalanceStoreUserTotalBalance } from "../../memory/balances/balances.js";
 import { CONTRACT_STORE, readContractStoreUserContractAvgPrice, readContractStoreUserContractCollateral, readContractStoreUserContractQuantity, readContractStoreUserContractUnrealizedPnL, updateContractStoreUserContractAvgPrice, updateContractStoreUserContractCollateral, updateContractStoreUserContractQuantity } from "../../memory/contracts/contracts-store.js";
 import type { ContractInputPayloadDbAdapter } from "../../memory/contracts/contracts-types.js";
 import { queueMessageForAdapter } from "../../queue/db-publisher-client.js";

@@ -3,10 +3,11 @@ import { serveOpenContracts } from "../handlers/contract-handler/contract.handle
 import { hanldeLongOrders } from "../handlers/order-handler/long.handler.js";
 import { hanldeShortOrders } from "../handlers/order-handler/short.handler.js";
 import { handleCancelOrder } from "../handlers/order-handler/utils.js";
-import { handle_INIT_USER_BALANCE_Request, handleGetUserBalance, hanldeUserBalanceUpdate } from "../memory/balances/perp-balances.js";
+import { handle_INIT_USER_BALANCE_Request, handleGetUserBalance } from "../memory/balances/balances.js";
 import { getDepth, handleCreateOrderEntityRequest } from "../memory/orderbook/prep-orderbook.js";
 import { handleOrderOpenOrderRequest } from "../memory/orders/orders.js";
 import { OrderSide } from "../types/perp-types.js";
+import { handle_UPDATE_USER_BALANCE_Request } from "../memory/balances/balances.js";
 
 export function engineRequestHanlder(request:EngineRequestType){
 
@@ -21,7 +22,11 @@ export function engineRequestHanlder(request:EngineRequestType){
     return handle_INIT_USER_BALANCE_Request(request.payload);
   }
 
+  if(messageType === EngineCommandEnum.UPDATE_USER_BALANCE){
+    return handle_UPDATE_USER_BALANCE_Request(request.payload);
+  }
 
+  
 
   if(messageType == EngineCommandEnum.CREATE_ORDER){
     if(request.payload.side == OrderSide.long){
@@ -30,10 +35,6 @@ export function engineRequestHanlder(request:EngineRequestType){
     if(request.payload.side == OrderSide.short){
      return hanldeShortOrders(request.payload as any);
     }
-  }
-
-  if(messageType == EngineCommandEnum.UPDATE_BALANCE){
-    return hanldeUserBalanceUpdate(request.payload as any);
   }
 
   if(messageType == EngineCommandEnum.OPEN_CONTRACT){

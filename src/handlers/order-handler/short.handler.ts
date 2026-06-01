@@ -1,7 +1,7 @@
 import { type OrderInputPayload } from "./long.handler.js";
 import { randomUUID } from "crypto";
 import { actionCreateShort, identifyOrderStatus, updateOrderOfMakershanldeContract} from "./utils.js";
-import { readBalanceStoreUserLockedBalance, readBalanceStoreUserTotalBalance, updateBalanceStoreUserLockedBalance } from "../../memory/balances/perp-balances.js";
+import { readBalanceStoreUserLockedBalance, readBalanceStoreUserTotalBalance, updateBalanceStoreUserLockedBalance } from "../../memory/balances/balances.js";
 import { OrderSide } from "../../types/perp-types.js";
 import { PERPETUAL_ORDERBOOK_STORE, PERPETUAL_ORDERBOOK_STORE_INDEX, updateStockUpdateId } from "../../memory/orderbook/prep-orderbook.js";
 import { createOrder, fetchFullFilledQuantityFromOrderId, ORDERS, removeUserOrderInIndex, updateOrderFullFilledQuantity, type Order } from "../../memory/orders/orders.js";
