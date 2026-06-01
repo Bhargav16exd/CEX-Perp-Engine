@@ -21,19 +21,6 @@ export const updateBalanceStoreUserLockedBalance = (userId:string, value:number)
     BALANCE_STORE[userId].balance["inr"].locked = value
 }
 
-export const hanldeUserBalanceUpdate = (payload : UpdateBalanceInput):any => {
-  const { id , balance, marketType } = payload
-  const userTotalBalance = readBalanceStoreUserTotalBalance(id)!;
-  updateBalanceStoreUserTotalBalance(id, userTotalBalance + balance)
-  //@ts-ignore
-  return BALANCE_STORE[id]?.balance["inr"]
-}
-
-export const handleGetUserBalance = (payload:any):any => {
-  const { userId } = payload
-  return readBalanceStoreUserTotalBalance(userId) - readBalanceStoreUserLockedBalance(userId);
-}
-
 /* 
   ------ QUEUE REQUEST HANDLERS ------
   ------------------------------------
@@ -60,7 +47,7 @@ export const handle_UPDATE_USER_BALANCE_Request = (payload:any) =>{
   if(!id || !balance){
     throw new Error("Invalid Inputs");
   }
-  
+
   const userBalance = readBalanceStoreUserTotalBalance(id)
 
   if(userBalance === undefined){
@@ -71,6 +58,25 @@ export const handle_UPDATE_USER_BALANCE_Request = (payload:any) =>{
 
   return {
     balance:readBalanceStoreUserTotalBalance(id)
+  }
+}
+
+export const handle_GET_USER_BALANCE_Request = (payload:any) => {
+  const { id } = payload;
+
+  if(!id){
+    throw new Error("Invalid Inputs");
+  }
+
+  const totalBalance = readBalanceStoreUserTotalBalance(id)
+  const lockedBalance = readBalanceStoreUserLockedBalance(id);
+
+  if(totalBalance === undefined || lockedBalance === undefined){
+    throw new Error("Invalid User Id")
+  }
+
+  return {
+    balance: (totalBalance - lockedBalance)
   }
 }
 
