@@ -1,14 +1,14 @@
 import { type OrderInputPayload } from "./long.handler.js";
 import { randomUUID } from "crypto";
 import { actionCreateShort, identifyOrderStatus, updateOrderOfMakershanldeContract} from "./utils.js";
-import PERPETUAL_BALANCE_STORE, { readBalanceStoreUserLockedBalance, readBalanceStoreUserTotalBalance, updateBalanceStoreUserLockedBalance } from "../../memory/balances/perp-balances.js";
-import { OrderSide, OrderType } from "../../types/perp-types.js";
+import { readBalanceStoreUserLockedBalance, readBalanceStoreUserTotalBalance, updateBalanceStoreUserLockedBalance } from "../../memory/balances/perp-balances.js";
+import { OrderSide } from "../../types/perp-types.js";
 import { PERPETUAL_ORDERBOOK_STORE, PERPETUAL_ORDERBOOK_STORE_INDEX, updateStockUpdateId } from "../../memory/orderbook/prep-orderbook.js";
-import { ACTIVE_ORDER_INDEX, createOrder, fetchFullFilledQuantityFromOrderId, ORDERS, removeUserOrderInIndex, updateOrderFullFilledQuantity, type Order } from "../../memory/orders/orders.js";
+import { createOrder, fetchFullFilledQuantityFromOrderId, ORDERS, removeUserOrderInIndex, updateOrderFullFilledQuantity, type Order } from "../../memory/orders/orders.js";
 import { queueMessageForAdapter } from "../../queue/db-publisher-client.js";
 import { AdapterEntityType, AdapterMessageType } from "../../types/db-adapter-types.js";
 import { pushDirtyPrices } from "../../memory/dirty-prices/dirty-prices.js";
-import { CONTRACT_STORE } from "../../memory/contracts/contracts-store.js";
+import { OrderType } from "@cex/shared";
 
 
 export const hanldeShortOrders = (payload: OrderInputPayload):any => {
@@ -32,11 +32,11 @@ export const hanldeShortOrders = (payload: OrderInputPayload):any => {
 	const previousUserLockedBalance = readBalanceStoreUserLockedBalance(userId);
 	updateBalanceStoreUserLockedBalance(userId, (previousUserLockedBalance + collateral));
 
-	if(type == OrderType.LIMIT){
+	if(type == OrderType.limit){
 		return handleOrderTypeLimit(req, res, userId, stockSymbol, type, side, price, quantity, collateral);
 	}
 
-	if(type == OrderType.MARKET){
+	if(type == OrderType.market){
 		handleOrderTypeMarket()
 	}
 }
@@ -146,7 +146,7 @@ const handlePriceNotAvailableInLimitOrder = (req: Request, res: Response, userId
       finalfilledquantity = finalfilledquantity + (userQuantity - fullfilledQuantity)
 
       //update orders of makers
-			updateOrderOfMakershanldeContract(longInfo.makerIds, longInfo?.remainingQuantity, userId, OrderSide.SHORT, orderId);
+			updateOrderOfMakershanldeContract(longInfo.makerIds, longInfo?.remainingQuantity, userId, OrderSide.short, orderId);
 
       //update order of taker
       updateOrderFullFilledQuantity(orderId, fetchFullFilledQuantityFromOrderId(orderId) + longInfo.remainingQuantity);
@@ -164,7 +164,7 @@ const handlePriceNotAvailableInLimitOrder = (req: Request, res: Response, userId
       finalfilledquantity = finalfilledquantity + (userQuantity - fullfilledQuantity);
       
       //upate orders of makers
-      updateOrderOfMakershanldeContract(longInfo.makerIds, (userQuantity - fullfilledQuantity), userId, OrderSide.SHORT, orderId);
+      updateOrderOfMakershanldeContract(longInfo.makerIds, (userQuantity - fullfilledQuantity), userId, OrderSide.short, orderId);
 
       //update orders of takers
       updateOrderFullFilledQuantity(orderId, fetchFullFilledQuantityFromOrderId(orderId) + (userQuantity - fullfilledQuantity));
@@ -178,7 +178,7 @@ const handlePriceNotAvailableInLimitOrder = (req: Request, res: Response, userId
 		}
 
     //upate order of makers
-		updateOrderOfMakershanldeContract(longInfo.makerIds, longInfo.remainingQuantity, userId, OrderSide.SHORT, orderId);
+		updateOrderOfMakershanldeContract(longInfo.makerIds, longInfo.remainingQuantity, userId, OrderSide.short, orderId);
 
     //upate order of taker
     updateOrderFullFilledQuantity(orderId, fetchFullFilledQuantityFromOrderId(orderId) + longInfo.remainingQuantity);

@@ -1,8 +1,8 @@
 import dotenv from "dotenv";
 import { connectRedis, publisher, subscriber } from "./queue/queue-client.js";
-import type { EngineRequestType, EngineResponseType } from "./types/engine-types.js";
 import { engineRequestHanlder } from "./request-handler/request-hanlder.js";
 import { publishDirtyPrices } from "./handlers/order-handler/delta.handler.js";
+import type { EngineRequestType, EngineResponseType } from "@cex/shared";
 
 dotenv.config();
 

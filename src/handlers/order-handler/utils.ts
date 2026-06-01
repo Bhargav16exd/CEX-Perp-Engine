@@ -151,10 +151,10 @@ export const updateOrderOfMakershanldeContract = (userIds: Record<string,Array<s
         updateOrderStatus(orderId, "partialfill");
 			}
 
-      if(OrderSideInput == OrderSide.LONG){
+      if(OrderSideInput == OrderSide.long){
         hanldeContracts("sol", pos, order?.price!, takerId, userId);
       }
-      else if(OrderSideInput == OrderSide.SHORT){
+      else if(OrderSideInput == OrderSide.short){
         hanldeContracts("sol", pos, order?.price!, userId, takerId);
       }
       

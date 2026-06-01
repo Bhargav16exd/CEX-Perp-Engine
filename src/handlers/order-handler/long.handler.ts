@@ -1,13 +1,13 @@
 import { randomUUID } from "crypto";
 import { actionCreateLong, identifyOrderStatus, updateOrderOfMakershanldeContract } from "./utils.js";
-import { OrderSide, OrderType } from "../../types/perp-types.js";
+import { OrderSide } from "../../types/perp-types.js";
 import { readBalanceStoreUserLockedBalance, readBalanceStoreUserTotalBalance, updateBalanceStoreUserLockedBalance } from "../../memory/balances/perp-balances.js";
 import { PERPETUAL_ORDERBOOK_STORE, PERPETUAL_ORDERBOOK_STORE_INDEX, updateStockUpdateId } from "../../memory/orderbook/prep-orderbook.js";
-import { ACTIVE_ORDER_INDEX, createOrder, fetchFullFilledQuantityFromOrderId, ORDERS, removeUserOrderInIndex, updateOrderFullFilledQuantity, type Order } from "../../memory/orders/orders.js";
+import { createOrder, fetchFullFilledQuantityFromOrderId, ORDERS, removeUserOrderInIndex, updateOrderFullFilledQuantity, type Order } from "../../memory/orders/orders.js";
 import { queueMessageForAdapter } from "../../queue/db-publisher-client.js";
 import { AdapterEntityType, AdapterMessageType } from "../../types/db-adapter-types.js";
 import { pushDirtyPrices } from "../../memory/dirty-prices/dirty-prices.js";
-import { CONTRACT_STORE } from "../../memory/contracts/contracts-store.js";
+import { OrderType } from "@cex/shared";
 
 export type OrderInputPayload = {
 	req:Request,
@@ -43,11 +43,11 @@ export const hanldeLongOrders = (payload: OrderInputPayload):any => {
 	const previousUserLockedBalance = readBalanceStoreUserLockedBalance(userId);
 	updateBalanceStoreUserLockedBalance(userId, (previousUserLockedBalance + collateral));
 
-	if(type == OrderType.LIMIT){
+	if(type == OrderType.limit){
 		return handleOrderTypeLimit(req, res, userId, stockSymbol, type, side, price, quantity, collateral);
 	}
 
-	if(type == OrderType.MARKET){
+	if(type == OrderType.market){
 		handleOrderTypeMarket()
 	}
 }
@@ -161,7 +161,7 @@ const handlePriceNotAvailableInLimitOrder = (req: Request, res: Response, userId
       finalfilledquantity = finalfilledquantity + (userQuantity - fullfilledQuantity)
 
 			//update orders of makers
-			updateOrderOfMakershanldeContract(shortInfo.makerIds, shortInfo.remainingQuantity, userId, OrderSide.LONG, orderId);
+			updateOrderOfMakershanldeContract(shortInfo.makerIds, shortInfo.remainingQuantity, userId, OrderSide.long, orderId);
 
 			//update order of taker
 			updateOrderFullFilledQuantity(orderId, fetchFullFilledQuantityFromOrderId(orderId) + shortInfo.remainingQuantity);
@@ -180,7 +180,7 @@ const handlePriceNotAvailableInLimitOrder = (req: Request, res: Response, userId
       finalfilledquantity = finalfilledquantity + (userQuantity - fullfilledQuantity)
 
 			//update orders of makers
-			updateOrderOfMakershanldeContract(shortInfo.makerIds, (userQuantity - fullfilledQuantity), userId, OrderSide.LONG, orderId);
+			updateOrderOfMakershanldeContract(shortInfo.makerIds, (userQuantity - fullfilledQuantity), userId, OrderSide.long, orderId);
 
 			//update order of taker
 			updateOrderFullFilledQuantity(orderId, fetchFullFilledQuantityFromOrderId(orderId) + (userQuantity - fullfilledQuantity));
@@ -196,7 +196,7 @@ const handlePriceNotAvailableInLimitOrder = (req: Request, res: Response, userId
 		}
 
 		//update order of makers
-		updateOrderOfMakershanldeContract(shortInfo.makerIds, shortInfo.remainingQuantity, userId, OrderSide.LONG, orderId);
+		updateOrderOfMakershanldeContract(shortInfo.makerIds, shortInfo.remainingQuantity, userId, OrderSide.long, orderId);
 
 		//update order of taker
 		updateOrderFullFilledQuantity(orderId, fetchFullFilledQuantityFromOrderId(orderId) + shortInfo.remainingQuantity);
