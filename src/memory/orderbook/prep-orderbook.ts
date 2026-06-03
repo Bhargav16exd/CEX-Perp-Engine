@@ -11,7 +11,9 @@ export const addPriceToOrderBookIndex = (stockSymbol:string, side:SidePerp, pric
 		return
 	}
 	//push
-	PERPETUAL_ORDERBOOK_STORE_INDEX[stockSymbol][side].push(price);
+  if(!PERPETUAL_ORDERBOOK_STORE_INDEX[stockSymbol][side].includes(price)){
+    PERPETUAL_ORDERBOOK_STORE_INDEX[stockSymbol][side].push(price);
+  }
 	//sort
 	PERPETUAL_ORDERBOOK_STORE_INDEX[stockSymbol][side].sort((a,b)=> a - b);
 }

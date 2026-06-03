@@ -189,13 +189,7 @@ const handlePriceNotAvailableInLimitOrder = (req: Request, res: Response, userId
 		//delete entry at that price
 		delete PERPETUAL_ORDERBOOK_STORE[stockSymbol].long[price]
 
-		if(price == userPrice){
-			actionCreateShort(userId, stockSymbol, userPrice, (userQuantity - fullfilledQuantity), orderId);
-		}else{
-      updateStockUpdateId(stockSymbol);
-    }
-
-		if(price == PERPETUAL_ORDERBOOK_STORE_INDEX[stockSymbol].long[0]){
+		if(price == userPrice || price == PERPETUAL_ORDERBOOK_STORE_INDEX[stockSymbol].long[0]){
 			actionCreateShort(userId, stockSymbol, userPrice, (userQuantity - fullfilledQuantity), orderId);
 		}else{
       updateStockUpdateId(stockSymbol);

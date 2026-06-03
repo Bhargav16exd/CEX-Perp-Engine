@@ -1,7 +1,7 @@
 import { randomUUID } from "crypto";
 import { actionCreateLong, identifyOrderStatus, updateOrderOfMakershanldeContract } from "./utils.js";
 import { OrderSide } from "../../types/perp-types.js";
-import BALANCE_STORE, { readBalanceStoreUserLockedBalance, readBalanceStoreUserTotalBalance, updateBalanceStoreUserLockedBalance } from "../../memory/balances/balances.js";
+import { readBalanceStoreUserLockedBalance, readBalanceStoreUserTotalBalance, updateBalanceStoreUserLockedBalance } from "../../memory/balances/balances.js";
 import { PERPETUAL_ORDERBOOK_STORE, PERPETUAL_ORDERBOOK_STORE_INDEX, updateStockUpdateId } from "../../memory/orderbook/prep-orderbook.js";
 import { createOrder, fetchFullFilledQuantityFromOrderId, ORDERS, removeUserOrderInIndex, updateOrderFullFilledQuantity} from "../../memory/orders/orders.js";
 import { queueMessageForAdapter } from "../../queue/db-publisher-client.js";
@@ -129,136 +129,125 @@ const handleOrderTypeLimit = (req: Request, res: Response, userId: string, stock
 
 const handlePriceNotAvailableInLimitOrder = (req: Request, res: Response, userId: string, stockSymbol: string, type: string, side: string, userPrice: number, userQuantity: number, collateral: number, orderId: string , order: OrderEntityType) => {
 
-	try {
-    let fullfilledQuantity = 0;
-    	let finalfilledquantity = 0;
-    	let count = 0;
-    	const orderbook_short_index_length = PERPETUAL_ORDERBOOK_STORE_INDEX[stockSymbol]?.short.length!
-    
-    	if(!PERPETUAL_ORDERBOOK_STORE_INDEX[stockSymbol]) return
-    	if(!PERPETUAL_ORDERBOOK_STORE[stockSymbol]) return
-    
-    	for(const price of PERPETUAL_ORDERBOOK_STORE_INDEX[stockSymbol].short){
-    
-    		if(price > userPrice &&  fullfilledQuantity != userQuantity){
-          pushDirtyPrices(stockSymbol, userPrice);
-    			actionCreateLong(userId, stockSymbol, userPrice, (userQuantity - fullfilledQuantity), orderId);
-    			break;
-    		}
-    
-    		if(fullfilledQuantity == userQuantity || price > userPrice){
-    			break;
-    		}
-    
-    		// ----- FETCH SHORT INFO AT THAT PRICE -----
-    		const shortInfo = PERPETUAL_ORDERBOOK_STORE[stockSymbol]?.short[price]!
-    
-    		/*
-          ------ SECTION 2 ------
-    			INFO : We check if the available quantity at that price bracket is sufficient to fulfill user requirements
-    			-----------------------
-    		*/
-    
-    		if(shortInfo?.remainingQuantity == (userQuantity - fullfilledQuantity)){
-    
-          finalfilledquantity = finalfilledquantity + (userQuantity - fullfilledQuantity)
-    
-    			//update orders of makers
-    			updateOrderOfMakershanldeContract(shortInfo.makerIds, shortInfo.remainingQuantity, userId, OrderSide.long, orderId);
-    
-    			//update order of taker
-    			updateOrderFullFilledQuantity(orderId, fetchFullFilledQuantityFromOrderId(orderId) + shortInfo.remainingQuantity);
-    
-    			//delete 
-    			delete PERPETUAL_ORDERBOOK_STORE[stockSymbol].short[price];
-    			
-          pushDirtyPrices(stockSymbol, price);
-          updateStockUpdateId(stockSymbol);
-    			count++;
-    			break;
-    		}
-    
-    		if(shortInfo?.remainingQuantity > (userQuantity - fullfilledQuantity) ){
-    
-          finalfilledquantity = finalfilledquantity + (userQuantity - fullfilledQuantity)
-    
-    			//update orders of makers
-    			updateOrderOfMakershanldeContract(shortInfo.makerIds, (userQuantity - fullfilledQuantity), userId, OrderSide.long, orderId);
-    
-    			//update order of taker
-    			updateOrderFullFilledQuantity(orderId, fetchFullFilledQuantityFromOrderId(orderId) + (userQuantity - fullfilledQuantity));
-    
-    			//update remaining quanitity in the orderbook
-    			const remainingStockQuantity = shortInfo.remainingQuantity;
-    			PERPETUAL_ORDERBOOK_STORE[stockSymbol].short[price]!.remainingQuantity = remainingStockQuantity - (userQuantity - fullfilledQuantity);
-    
-          pushDirtyPrices(stockSymbol, price);
-          updateStockUpdateId(stockSymbol);
-    
-    			break;
-    		}
-    
-    		//update order of makers
-    		updateOrderOfMakershanldeContract(shortInfo.makerIds, shortInfo.remainingQuantity, userId, OrderSide.long, orderId);
-    
-    		//update order of taker
-    		updateOrderFullFilledQuantity(orderId, fetchFullFilledQuantityFromOrderId(orderId) + shortInfo.remainingQuantity);
-    
-    		//update fullfilled quantity
-        finalfilledquantity = finalfilledquantity + shortInfo.remainingQuantity;
-    		fullfilledQuantity = fullfilledQuantity + shortInfo.remainingQuantity;
-    
-    		//delete entry at that price
-    		delete PERPETUAL_ORDERBOOK_STORE[stockSymbol].short[price];
-    
-    		if(price == userPrice){
-    			actionCreateLong(userId, stockSymbol, userPrice, (userQuantity - fullfilledQuantity), orderId);
-    		}
-        else{
-          updateStockUpdateId(stockSymbol);
-        }
-    
-    		if(price == PERPETUAL_ORDERBOOK_STORE_INDEX[stockSymbol].short[orderbook_short_index_length-1]){
-    			actionCreateLong(userId, stockSymbol, userPrice, (userQuantity - fullfilledQuantity), orderId);
-    		}
-        else{
-          updateStockUpdateId(stockSymbol);
-        } 
-    
-        pushDirtyPrices(stockSymbol, price);
-        count ++;		
-    	}
-    
-    	while(count > 0){
-    		PERPETUAL_ORDERBOOK_STORE_INDEX[stockSymbol].short.shift();
-    		count--;
-    	} 
-    
-      let messageType = AdapterMessageType.INSERT;
-      
-      //UPDATE TAKER ORDER STATUS
-      order.status = identifyOrderStatus(userQuantity, finalfilledquantity)!;
-    
-      if(order.status === "closed"){
-        delete ORDERS[orderId];
-        removeUserOrderInIndex(userId, orderId, stockSymbol);
-        messageType = AdapterMessageType.APPEND_ONLY
-      }
-    
-      queueMessageForAdapter({
-        messageType,
-        entityType:AdapterEntityType.ORDER,
-        payload:order
-      })
-    
-    	return {
-        totalQuantity:userQuantity,
-        fillQuantity:finalfilledquantity
-      };
+let fullfilledQuantity = 0;
+  let finalfilledquantity = 0;
+  let count = 0;
+  const orderbook_short_index_length = PERPETUAL_ORDERBOOK_STORE_INDEX[stockSymbol]?.short.length!
 
-  } catch (error) {
-    console.log(error)
+  if(!PERPETUAL_ORDERBOOK_STORE_INDEX[stockSymbol]) return
+  if(!PERPETUAL_ORDERBOOK_STORE[stockSymbol]) return
+
+  for(const price of PERPETUAL_ORDERBOOK_STORE_INDEX[stockSymbol].short){
+
+    if(price > userPrice &&  fullfilledQuantity != userQuantity){
+      pushDirtyPrices(stockSymbol, userPrice);
+      actionCreateLong(userId, stockSymbol, userPrice, (userQuantity - fullfilledQuantity), orderId);
+      break;
+    }
+
+    if(fullfilledQuantity == userQuantity || price > userPrice){
+      break;
+    }
+
+    // ----- FETCH SHORT INFO AT THAT PRICE -----
+    const shortInfo = PERPETUAL_ORDERBOOK_STORE[stockSymbol]?.short[price]!
+
+    /*
+      ------ SECTION 2 ------
+      INFO : We check if the available quantity at that price bracket is sufficient to fulfill user requirements
+      -----------------------
+    */
+
+    if(shortInfo?.remainingQuantity == (userQuantity - fullfilledQuantity)){
+
+      finalfilledquantity = finalfilledquantity + (userQuantity - fullfilledQuantity)
+
+      //update orders of makers
+      updateOrderOfMakershanldeContract(shortInfo.makerIds, shortInfo.remainingQuantity, userId, OrderSide.long, orderId);
+
+      //update order of taker
+      updateOrderFullFilledQuantity(orderId, fetchFullFilledQuantityFromOrderId(orderId) + shortInfo.remainingQuantity);
+
+      //delete 
+      delete PERPETUAL_ORDERBOOK_STORE[stockSymbol].short[price];
+      
+      pushDirtyPrices(stockSymbol, price);
+      updateStockUpdateId(stockSymbol);
+      count++;
+      break;
+    }
+
+    if(shortInfo?.remainingQuantity > (userQuantity - fullfilledQuantity) ){
+
+      finalfilledquantity = finalfilledquantity + (userQuantity - fullfilledQuantity)
+
+      //update orders of makers
+      updateOrderOfMakershanldeContract(shortInfo.makerIds, (userQuantity - fullfilledQuantity), userId, OrderSide.long, orderId);
+
+      //update order of taker
+      updateOrderFullFilledQuantity(orderId, fetchFullFilledQuantityFromOrderId(orderId) + (userQuantity - fullfilledQuantity));
+
+      //update remaining quanitity in the orderbook
+      const remainingStockQuantity = shortInfo.remainingQuantity;
+      PERPETUAL_ORDERBOOK_STORE[stockSymbol].short[price]!.remainingQuantity = remainingStockQuantity - (userQuantity - fullfilledQuantity);
+
+      pushDirtyPrices(stockSymbol, price);
+      updateStockUpdateId(stockSymbol);
+
+      break;
+    }
+
+    //update order of makers
+    updateOrderOfMakershanldeContract(shortInfo.makerIds, shortInfo.remainingQuantity, userId, OrderSide.long, orderId);
+
+    //update order of taker
+    updateOrderFullFilledQuantity(orderId, fetchFullFilledQuantityFromOrderId(orderId) + shortInfo.remainingQuantity);
+
+    //update fullfilled quantity
+    finalfilledquantity = finalfilledquantity + shortInfo.remainingQuantity;
+    fullfilledQuantity = fullfilledQuantity + shortInfo.remainingQuantity;
+
+    //delete entry at that price
+    delete PERPETUAL_ORDERBOOK_STORE[stockSymbol].short[price];
+
+    if(price == userPrice || price == PERPETUAL_ORDERBOOK_STORE_INDEX[stockSymbol].short[orderbook_short_index_length-1]){
+      actionCreateLong(userId, stockSymbol, userPrice, (userQuantity - fullfilledQuantity), orderId);
+    }
+    else{
+      updateStockUpdateId(stockSymbol);
+    }
+
+    pushDirtyPrices(stockSymbol, price);
+    count ++;		
   }
+
+  while(count > 0){
+    PERPETUAL_ORDERBOOK_STORE_INDEX[stockSymbol].short.shift();
+    count--;
+  } 
+
+  let messageType = AdapterMessageType.INSERT;
+  
+  //UPDATE TAKER ORDER STATUS
+  order.status = identifyOrderStatus(userQuantity, finalfilledquantity)!;
+
+  if(order.status === "closed"){
+    delete ORDERS[orderId];
+    removeUserOrderInIndex(userId, orderId, stockSymbol);
+    messageType = AdapterMessageType.APPEND_ONLY
+  }
+
+  queueMessageForAdapter({
+    messageType,
+    entityType:AdapterEntityType.ORDER,
+    payload:order
+  })
+
+  return {
+    totalQuantity:userQuantity,
+    fillQuantity:finalfilledquantity
+  };
+
 }
 
 const handleOrderTypeMarket = () => {
