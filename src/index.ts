@@ -26,6 +26,7 @@ publishDirtyPrices();
 
 //process request
 for(;;){
+
   const entity = await subscriber.brPop(ENGINE_REQUEST_QUEUE, 5);
 
   if(!entity) continue;

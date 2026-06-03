@@ -1,42 +1,22 @@
 import type { ContractsStoreType } from "./contracts-types.js";
 
-export const CONTRACT_STORE:ContractsStoreType = {
-	"11":{
-		"sol":{
-			contract_quantity:0,
-			avg_price:0,
-			collateral:0,
-			unrealizedPnL:0
-		}
-	},
-	"12":{
-		"sol":{
-			contract_quantity:0,
-			avg_price:0,
-			collateral:0,
-			unrealizedPnL:0
-		}
-	},
-	"13":{
-		"sol":{
-			contract_quantity:0,
-			avg_price:0,
-			collateral:0,
-			unrealizedPnL:0
-		}
-	},
-	"14":{
-		"sol":{
-			contract_quantity:0,
-			avg_price:0,
-			collateral:0,
-			unrealizedPnL:0
-		}
-	}
+export const CONTRACT_STORE:ContractsStoreType = {}
+
+// ----- CONTRACTS VALUES CREATE  ----
+export const createContractUser = (userId:string) => {
+  CONTRACT_STORE[userId] = {};
+}
+
+export const createContractUserStock = (userId:string, symbol:string) => {
+  CONTRACT_STORE[userId]![symbol] = {
+    contract_quantity:0,
+    avg_price:0,
+    collateral:0,
+    unrealizedPnL:0
+  }
 }
 
 // ----- CONTRACTS VALUES READ ----
-
 export const readContractStoreUserContractQuantity = (userId:string, stockSymbol:string) => {
 	//@ts-ignore
 	return CONTRACT_STORE[userId][stockSymbol].contract_quantity
@@ -84,4 +64,5 @@ export const updateContractStoreUserContractUnrealizedPnL = (userId:string, stoc
 */
 export const loadContracts = (backup: ContractsStoreType) => {
   Object.assign(CONTRACT_STORE, backup);
+  console.log(CONTRACT_STORE)
 }

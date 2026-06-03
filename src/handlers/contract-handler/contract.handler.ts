@@ -1,6 +1,6 @@
 import { randomUUID } from "crypto";
 import { readBalanceStoreUserLockedBalance, readBalanceStoreUserTotalBalance, updateBalanceStoreUserLockedBalance, updateBalanceStoreUserTotalBalance } from "../../memory/balances/balances.js";
-import { CONTRACT_STORE, readContractStoreUserContractAvgPrice, readContractStoreUserContractCollateral, readContractStoreUserContractQuantity, readContractStoreUserContractUnrealizedPnL, updateContractStoreUserContractAvgPrice, updateContractStoreUserContractCollateral, updateContractStoreUserContractQuantity } from "../../memory/contracts/contracts-store.js";
+import { CONTRACT_STORE, createContractUser, createContractUserStock, readContractStoreUserContractAvgPrice, readContractStoreUserContractCollateral, readContractStoreUserContractQuantity, readContractStoreUserContractUnrealizedPnL, updateContractStoreUserContractAvgPrice, updateContractStoreUserContractCollateral, updateContractStoreUserContractQuantity } from "../../memory/contracts/contracts-store.js";
 import type { ContractInputPayloadDbAdapter } from "../../memory/contracts/contracts-types.js";
 import { queueMessageForAdapter } from "../../queue/db-publisher-client.js";
 import { AdapterEntityType, AdapterMessageType } from "@cex/shared";
@@ -9,6 +9,9 @@ import { AdapterEntityType, AdapterMessageType } from "@cex/shared";
 export const hanldeContracts = (stockSymbol:string, contract_quantity:number, price:number, personWhoLongedId:string, personWhoShortedId:string) => {
 
   const collateral = contract_quantity * price ;
+
+  handlePreContractChecks(personWhoLongedId, stockSymbol);
+  handlePreContractChecks(personWhoShortedId, stockSymbol);
 
   const {completeClose:isLongCompleteClose, partialClosePartialRefill:isLongParitalClosePartialRefill} = checkIsLongOrderClosingContract(stockSymbol, contract_quantity, price, personWhoLongedId, personWhoShortedId);
   const {completeClose:isShortCompleteClose, partialClosePartialRefill:isShortParitalClosePartialRefill} = checkIsShortOrderClosingContract(stockSymbol, contract_quantity, price, personWhoLongedId, personWhoShortedId);
@@ -297,4 +300,27 @@ export const serveOpenContracts = (payload:any) => {
     userId
   };
 
+}
+
+const handlePreContractChecks = (userId:string, symbol:string) => {
+  if(!checkIsUserExistInContract(userId)){
+    createContractUser(userId);
+  }
+  if(!checkIsStockExistInUser(userId, symbol)){
+    createContractUserStock(userId, symbol);
+  }
+}
+
+const checkIsUserExistInContract = (userId:string) => {
+  if(!CONTRACT_STORE[userId]){
+    return false;
+  }
+  return true;
+}
+
+const checkIsStockExistInUser = (userId: string, symbol:string) => {
+  if(!CONTRACT_STORE[userId]![symbol]){
+    return false
+  }
+  return true
 }

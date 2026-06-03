@@ -83,7 +83,7 @@ export const loadBackups = async () =>{
   }
 }
 
-export const startBackups = () =>{
+export const startBackups = () => {
   setInterval(async ()=>{
     await backupServerState();
   }, 5000)
