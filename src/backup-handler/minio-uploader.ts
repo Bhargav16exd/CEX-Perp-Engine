@@ -5,7 +5,7 @@ import { loadOrderbook, loadOrderbookIndex, PERPETUAL_ORDERBOOK_STORE, PERPETUAL
 import { ACTIVE_ORDER_INDEX, loadOrders, ORDERS } from "../memory/orders/orders.js";
 import type { BackupTypes } from "./backup.types.js";
 import BALANCE_STORE, { loadBalances } from "../memory/balances/balances.js";
-import { loadContracts } from "../memory/contracts/contracts-store.js";
+import { CONTRACT_STORE, loadContracts } from "../memory/contracts/contracts-store.js";
 
 
 const BUCKET_NAME = "centralized-exchange-bucket"
@@ -37,13 +37,23 @@ export const backupServerState = async () =>{
 
 const writeStateIntoFile = async () => {
 
+  const serializedActiveOrderIndex = Object.fromEntries(
+    Array.from(ACTIVE_ORDER_INDEX.entries()).map(
+      ([symbol, userMap]) => [
+        symbol,
+        Object.fromEntries(userMap)
+      ]
+    )
+  );
+
   try {
     const data = {
       PERPETUAL_ORDERBOOK_STORE,
       PERPETUAL_ORDERBOOK_STORE_INDEX,
+      CONTRACT_STORE,
       BALANCE_STORE,
       ORDERS,
-      ACTIVE_ORDER_INDEX,
+      ACTIVE_ORDER_INDEX:serializedActiveOrderIndex,
       updatedAt: Date.now(),
     };
   
@@ -67,11 +77,25 @@ export const loadBackups = async () =>{
     
     const parsedBackup  = JSON.parse(jsonStringBackupData) as BackupTypes;
 
+
+    const activeOrderIndex = new Map(
+      Object.entries(parsedBackup.ACTIVE_ORDER_INDEX).map(
+        ([symbol, userMap]) => [
+          symbol,
+          new Map(
+            Object.entries(
+              userMap as Record<string, string[]>
+            )
+          )
+        ]
+      )
+    );
+
     loadBalances(parsedBackup.BALANCE_STORE);
     loadContracts(parsedBackup.CONTRACT_STORE);
     loadOrderbook(parsedBackup.PERPETUAL_ORDERBOOK_STORE);
     loadOrderbookIndex(parsedBackup.PERPETUAL_ORDERBOOK_STORE_INDEX);
-    loadOrders(parsedBackup.ORDERS, parsedBackup.ACTIVE_ORDER_INDEX);
+    loadOrders(parsedBackup.ORDERS, activeOrderIndex);
     
     await fs.unlink(DOWNLOAD_LOCAL_STATE_FILE);
 

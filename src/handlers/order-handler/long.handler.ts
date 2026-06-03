@@ -58,8 +58,6 @@ const handleOrderTypeLimit = (req: Request, res: Response, userId: string, stock
 	if(!PERPETUAL_ORDERBOOK_STORE[stockSymbol]) return
 	if(!PERPETUAL_ORDERBOOK_STORE_INDEX[stockSymbol] || !PERPETUAL_ORDERBOOK_STORE_INDEX[stockSymbol].short) return
 
-  console.log(PERPETUAL_ORDERBOOK_STORE)
-
 	//UTILS AND DECLARTIONS
 	const orderbook_short_index_length = PERPETUAL_ORDERBOOK_STORE_INDEX[stockSymbol].short.length
 
@@ -151,9 +149,6 @@ const handlePriceNotAvailableInLimitOrder = (req: Request, res: Response, userId
     		if(fullfilledQuantity == userQuantity || price > userPrice){
     			break;
     		}
-    
-        console.log(price)
-        console.log(PERPETUAL_ORDERBOOK_STORE[stockSymbol]?.short[price])
     
     		// ----- FETCH SHORT INFO AT THAT PRICE -----
     		const shortInfo = PERPETUAL_ORDERBOOK_STORE[stockSymbol]?.short[price]!

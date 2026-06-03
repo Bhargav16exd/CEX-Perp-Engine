@@ -4,6 +4,7 @@ import { CONTRACT_STORE, createContractUser, createContractUserStock, readContra
 import type { ContractInputPayloadDbAdapter } from "../../memory/contracts/contracts-types.js";
 import { queueMessageForAdapter } from "../../queue/db-publisher-client.js";
 import { AdapterEntityType, AdapterMessageType } from "@cex/shared";
+import { OrderSide } from "../../types/perp-types.js";
 
 
 export const hanldeContracts = (stockSymbol:string, contract_quantity:number, price:number, personWhoLongedId:string, personWhoShortedId:string) => {
@@ -27,11 +28,10 @@ export const hanldeContracts = (stockSymbol:string, contract_quantity:number, pr
 
   OrderLongSettleContracts(stockSymbol, contract_quantity, price, personWhoLongedId, personWhoShortedId, collateral);
 	OrderShortSettleContracts(stockSymbol, contract_quantity, price, personWhoLongedId, personWhoShortedId, collateral);
- 
   if(isLongCompleteClose === true){
     delete CONTRACT_STORE[personWhoLongedId]![stockSymbol]
   }
-  else if(isShortCompleteClose === true){
+  if(isShortCompleteClose === true){
     delete CONTRACT_STORE[personWhoShortedId]![stockSymbol]
   }
 }
@@ -269,39 +269,6 @@ const buildAndQueueContractEntity = (contract_id:string, quantity:number, price:
   });
 }
 
-export const serveOpenContracts = (payload:any) => {
-  
-  const { stockSymbol, userId } = payload
-
-  if(!CONTRACT_STORE[userId] || !CONTRACT_STORE[userId][stockSymbol]){
-    throw new Error("Invalid User Id or Stock Symbol")
-  }
-
-  const contract = CONTRACT_STORE[userId][stockSymbol]
-  const pnl = contract.unrealizedPnL;
-
-  let realizedProfit = 0;
-  let realizedLoss = 0;
-
-  if(pnl > 0){
-    realizedProfit = pnl
-  }
-  else if(pnl < 0){
-    realizedLoss = pnl
-  }
-
-  return {
-    contract_quantity:contract.contract_quantity,
-    avg_price:contract.avg_price,
-    collateral:contract.collateral,
-    realizedProfit,
-    realizedLoss,
-    stockSymbol,
-    userId
-  };
-
-}
-
 const handlePreContractChecks = (userId:string, symbol:string) => {
   if(!checkIsUserExistInContract(userId)){
     createContractUser(userId);
@@ -323,4 +290,58 @@ const checkIsStockExistInUser = (userId: string, symbol:string) => {
     return false
   }
   return true
+}
+
+/* 
+  ------ QUEUE REQUEST HANDLERS ------
+  ------------------------------------
+*/
+
+export const handle_GET_OPEN_CONTRACT_Request = (payload:any) => {
+  const { symbol, id } = payload
+
+  if(!CONTRACT_STORE[id]){
+    return {
+      success:false
+    }
+  }
+
+  if(!CONTRACT_STORE[id][symbol]){
+    return {
+      success:false
+    }
+  }
+
+  const contract = CONTRACT_STORE[id][symbol]
+  const pnl = contract.unrealizedPnL;
+
+  let realizedProfit = 0;
+  let realizedLoss = 0;
+  let side = OrderSide.long
+
+  if(contract.contract_quantity > 0){
+    side = OrderSide.long
+  }
+  else if(contract.contract_quantity < 0){
+    side = OrderSide.short
+  }
+
+  if(pnl > 0){
+    realizedProfit = pnl
+  }
+  else if(pnl < 0){
+    realizedLoss = pnl
+  }
+
+  return {
+    success:true,
+    symbol,
+    side,
+    contract_quantity:contract.contract_quantity,
+    avg_price:contract.avg_price,
+    collateral:contract.collateral,
+    realizedProfit,
+    realizedLoss,
+    id
+  };
 }

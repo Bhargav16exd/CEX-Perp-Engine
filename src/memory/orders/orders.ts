@@ -129,5 +129,14 @@ export const handleOrderOpenOrderRequest = (payload:any) => {
 */
 export const loadOrders = (orderBackup: OrderEntityType, orderIndexBackup: Map<string, Map<string, Array<string>>>) => {
   Object.assign(ORDERS, orderBackup);
-  Object.assign(ACTIVE_ORDER_INDEX, orderIndexBackup);
+
+  for(const [userId, symbolMap] of orderIndexBackup.entries()){
+    ACTIVE_ORDER_INDEX.set(userId, 
+      new Map( [...symbolMap.entries()].map(([symbol, orderIds])=>[
+        symbol,
+        [...orderIds]
+      ]))
+    )
+  }
+
 }

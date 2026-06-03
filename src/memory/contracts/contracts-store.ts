@@ -64,5 +64,4 @@ export const updateContractStoreUserContractUnrealizedPnL = (userId:string, stoc
 */
 export const loadContracts = (backup: ContractsStoreType) => {
   Object.assign(CONTRACT_STORE, backup);
-  console.log(CONTRACT_STORE)
 }

@@ -1,5 +1,4 @@
 import { EngineCommandEnum, type EngineRequestType } from "@cex/shared";
-import { serveOpenContracts } from "../handlers/contract-handler/contract.handler.js";
 import { hanldeLongOrders } from "../handlers/order-handler/long.handler.js";
 import { hanldeShortOrders } from "../handlers/order-handler/short.handler.js";
 import { handleCancelOrder } from "../handlers/order-handler/utils.js";
@@ -8,6 +7,7 @@ import { getDepth, handleCreateOrderEntityRequest } from "../memory/orderbook/pr
 import { handleOrderOpenOrderRequest } from "../memory/orders/orders.js";
 import { OrderSide } from "../types/perp-types.js";
 import { handle_UPDATE_USER_BALANCE_Request } from "../memory/balances/balances.js";
+import { handle_GET_OPEN_CONTRACT_Request } from "../handlers/contract-handler/contract.handler.js";
 
 export function engineRequestHanlder(request:EngineRequestType){
 
@@ -44,9 +44,16 @@ export function engineRequestHanlder(request:EngineRequestType){
     }
   }
 
-  if(messageType == EngineCommandEnum.OPEN_CONTRACT){
-    return serveOpenContracts(request.payload as any);
+  /*
+    ------- CONTRACT REQUEST HANLDER -------- 
+    -----------------------------------------
+  */ 
+
+  if(messageType == EngineCommandEnum.GET_OPEN_CONTRACT){
+    return handle_GET_OPEN_CONTRACT_Request(request.payload as any);
   }
+
+
 
   if(messageType == EngineCommandEnum.CANCEL_ORDER){
     return handleCancelOrder(request.payload as any);
