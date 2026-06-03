@@ -80,4 +80,13 @@ export const handle_GET_USER_BALANCE_Request = (payload:any) => {
   }
 }
 
+/* 
+  ------ LOADING BACKUPS IN MEMORY ------
+  ---------------------------------------
+*/
+
+export const loadBalances = (backup: BalanceStoreType) => {
+  Object.assign(BALANCE_STORE, backup);
+}
+
 export default BALANCE_STORE;

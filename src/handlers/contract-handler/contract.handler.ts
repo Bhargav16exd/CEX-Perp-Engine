@@ -3,7 +3,7 @@ import { readBalanceStoreUserLockedBalance, readBalanceStoreUserTotalBalance, up
 import { CONTRACT_STORE, readContractStoreUserContractAvgPrice, readContractStoreUserContractCollateral, readContractStoreUserContractQuantity, readContractStoreUserContractUnrealizedPnL, updateContractStoreUserContractAvgPrice, updateContractStoreUserContractCollateral, updateContractStoreUserContractQuantity } from "../../memory/contracts/contracts-store.js";
 import type { ContractInputPayloadDbAdapter } from "../../memory/contracts/contracts-types.js";
 import { queueMessageForAdapter } from "../../queue/db-publisher-client.js";
-import { AdapterEntityType, AdapterMessageType } from "../../types/db-adapter-types.js";
+import { AdapterEntityType, AdapterMessageType } from "@cex/shared";
 
 
 export const hanldeContracts = (stockSymbol:string, contract_quantity:number, price:number, personWhoLongedId:string, personWhoShortedId:string) => {

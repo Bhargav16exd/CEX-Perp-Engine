@@ -3,11 +3,10 @@ import { actionCreateLong, identifyOrderStatus, updateOrderOfMakershanldeContrac
 import { OrderSide } from "../../types/perp-types.js";
 import { readBalanceStoreUserLockedBalance, readBalanceStoreUserTotalBalance, updateBalanceStoreUserLockedBalance } from "../../memory/balances/balances.js";
 import { PERPETUAL_ORDERBOOK_STORE, PERPETUAL_ORDERBOOK_STORE_INDEX, updateStockUpdateId } from "../../memory/orderbook/prep-orderbook.js";
-import { createOrder, fetchFullFilledQuantityFromOrderId, ORDERS, removeUserOrderInIndex, updateOrderFullFilledQuantity, type Order } from "../../memory/orders/orders.js";
+import { createOrder, fetchFullFilledQuantityFromOrderId, ORDERS, removeUserOrderInIndex, updateOrderFullFilledQuantity} from "../../memory/orders/orders.js";
 import { queueMessageForAdapter } from "../../queue/db-publisher-client.js";
-import { AdapterEntityType, AdapterMessageType } from "../../types/db-adapter-types.js";
 import { pushDirtyPrices } from "../../memory/dirty-prices/dirty-prices.js";
-import { OrderType } from "@cex/shared";
+import { AdapterEntityType, AdapterMessageType, OrderType, type OrderEntityType } from "@cex/shared";
 
 export type OrderInputPayload = {
 	req:Request,
@@ -35,6 +34,7 @@ export const hanldeLongOrders = (payload: OrderInputPayload):any => {
   -----------------------
 	*/
 	const userAvailableBalance = readBalanceStoreUserTotalBalance(userId) - readBalanceStoreUserLockedBalance(userId);
+
 	if(userAvailableBalance < collateral){
     throw new Error("Insufficient Balance");
 	}
@@ -62,7 +62,7 @@ const handleOrderTypeLimit = (req: Request, res: Response, userId: string, stock
 
 	//CREATE ORDER
 	const orderId = randomUUID();
-	let order = createOrder(orderId, stockSymbol, userPrice, quantity, "long", userId, "limit", "open");
+	let order = createOrder(orderId, stockSymbol, userPrice, quantity, "long", userId, OrderType.limit, "open");
 
 	if(
 		!PERPETUAL_ORDERBOOK_STORE[stockSymbol]?.short[userPrice] 
@@ -96,6 +96,7 @@ const handleOrderTypeLimit = (req: Request, res: Response, userId: string, stock
         entityType:AdapterEntityType.ORDER,
         payload:order
       })
+
       pushDirtyPrices(stockSymbol, userPrice);
       updateStockUpdateId(stockSymbol);
 
@@ -125,7 +126,7 @@ const handleOrderTypeLimit = (req: Request, res: Response, userId: string, stock
 	return handlePriceNotAvailableInLimitOrder(req, res, userId, stockSymbol, type, side, userPrice, quantity, collateral, orderId, order);
 }
 
-const handlePriceNotAvailableInLimitOrder = (req: Request, res: Response, userId: string, stockSymbol: string, type: string, side: string, userPrice: number, userQuantity: number, collateral: number, orderId: string , order:Order) => {
+const handlePriceNotAvailableInLimitOrder = (req: Request, res: Response, userId: string, stockSymbol: string, type: string, side: string, userPrice: number, userQuantity: number, collateral: number, orderId: string , order: OrderEntityType) => {
 
 	let fullfilledQuantity = 0;
 	let finalfilledquantity = 0;
@@ -232,6 +233,8 @@ const handlePriceNotAvailableInLimitOrder = (req: Request, res: Response, userId
 	} 
 
   let messageType = AdapterMessageType.INSERT;
+  
+  //UPDATE TAKER ORDER STATUS
   order.status = identifyOrderStatus(userQuantity, finalfilledquantity)!;
 
   if(order.status === "closed"){

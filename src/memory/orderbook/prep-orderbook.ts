@@ -1,24 +1,11 @@
+import type { SidePerp } from "@cex/shared";
 import type { PerpetualOrderbookIndexStoreType, PerpetualOrderbookStoreType } from "./perp-orderbook-types.js";
 
-export const PERPETUAL_ORDERBOOK_STORE: PerpetualOrderbookStoreType = {
-	sol: {
-    updateId:0,
-		short:{},
-		long:{}
-}
-};
+export const PERPETUAL_ORDERBOOK_STORE: PerpetualOrderbookStoreType = {};
 
-export const PERPETUAL_ORDERBOOK_STORE_INDEX: PerpetualOrderbookIndexStoreType = {
-	sol:{
-		short:[],
-		long:[]
-	}
-};
+export const PERPETUAL_ORDERBOOK_STORE_INDEX: PerpetualOrderbookIndexStoreType = {};
 
-export type Side = "short" | "long";
-export type Type = "limit" | "market";
-
-export const addPriceToOrderBookIndex = (stockSymbol:string,side:Side,price:number) => {
+export const addPriceToOrderBookIndex = (stockSymbol:string, side:SidePerp, price:number) => {
 
 	if(!PERPETUAL_ORDERBOOK_STORE_INDEX[stockSymbol]){
 		return
@@ -66,3 +53,18 @@ export const getStockUpdateId = (stockSymbol:string) => {
 export const updateStockUpdateId =  (stockSymbol:string) => {
   PERPETUAL_ORDERBOOK_STORE[stockSymbol]!.updateId! = getStockUpdateId(stockSymbol) + 1;
 }
+
+
+/* 
+  ------ LOADING BACKUPS IN MEMORY ------
+  ---------------------------------------
+*/
+
+export const loadOrderbook = (backup: PerpetualOrderbookStoreType) => {
+  Object.assign(PERPETUAL_ORDERBOOK_STORE, backup);
+}
+
+export const loadOrderbookIndex = (backup: PerpetualOrderbookIndexStoreType) => {
+  Object.assign(PERPETUAL_ORDERBOOK_STORE_INDEX, backup);
+}
+

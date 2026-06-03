@@ -1,31 +1,9 @@
-import type { Side, Type } from "../orderbook/prep-orderbook.js";
+import { MarketType, type OrderEntityType, type OrderStatus, type OrderType, type SidePerp } from "@cex/shared";
 
-type OrderStatus = "open" | "cancelled" | "partialfill" | "closed"
+export const ORDERS : Record<string, OrderEntityType> = {};
 
-export type Order = {
-	orderId:string,
-
-  side:Side,
-  type:Type,
-
-	price:number,
-	quantity:number,
-	filledQuantity:number,
-	
-  status:OrderStatus
-
-	userId:string,
-
-  symbol:string,
-  market:string,
-  createdAt:string
-}
-
-export const APPEND_ONLY_ORDERS : Array<Order> = [];
-
-export const ORDERS : Record<string, Order> = {};
-
-/*
+/*  
+  ACTIVE_ORDER_INDEX
   {
     "userId":{ 
       "SOL_USDC":["orderId"] 
@@ -43,7 +21,7 @@ export const fetchFullFilledQuantityFromOrderId = (orderId:string) => {
 	return ORDERS[orderId]!.filledQuantity! || 0;
 }
 
-export const createOrder = (orderId:string, stockSymbol:string, price:number, quantity:number, side:Side, userId:string, type:Type, status:OrderStatus):Order=> {
+export const createOrder = (orderId:string, stockSymbol:string, price:number, quantity:number, side:SidePerp, userId:string, type:OrderType, status:OrderStatus):OrderEntityType=> {
 		ORDERS[orderId] = {
 		orderId,
 		side,
@@ -54,8 +32,7 @@ export const createOrder = (orderId:string, stockSymbol:string, price:number, qu
     status:"open",
 		userId,
     symbol:stockSymbol,
-    market:"perp",
-    createdAt:new Date().toLocaleString()
+    market:MarketType.perp,
 	}
   putUserOrderInIndex(userId, orderId, stockSymbol);
   return ORDERS[orderId]
@@ -144,4 +121,13 @@ export const handleOrderOpenOrderRequest = (payload:any) => {
     throw new Error("Invalid Input");
   }
   return getUserActiveOrders(id, symbol);
+}
+
+/* 
+  ------ LOADING BACKUPS IN MEMORY ------
+  ---------------------------------------
+*/
+export const loadOrders = (orderBackup: OrderEntityType, orderIndexBackup: Map<string, Map<string, Array<string>>>) => {
+  Object.assign(ORDERS, orderBackup);
+  Object.assign(ACTIVE_ORDER_INDEX, orderIndexBackup);
 }

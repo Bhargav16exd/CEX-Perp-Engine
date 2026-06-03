@@ -76,3 +76,12 @@ export const updateContractStoreUserContractUnrealizedPnL = (userId:string, stoc
 }
 
 // ----- CONTRACTS VALUES UPDATE ----
+
+
+/* 
+  ------ LOADING BACKUPS IN MEMORY ------
+  ---------------------------------------
+*/
+export const loadContracts = (backup: ContractsStoreType) => {
+  Object.assign(CONTRACT_STORE, backup);
+}

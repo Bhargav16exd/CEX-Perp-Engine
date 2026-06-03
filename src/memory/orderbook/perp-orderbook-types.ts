@@ -7,14 +7,14 @@ export interface PerpetualOrderbookIndexStoreType {
 }
 
 interface StockSpecificOrderbookIndexStoreType {
-    short:number[],
-    long:number[]
+  short:number[],
+  long:number[]
 }
 
 interface StockSpecificOrderbookStoreType {
-    updateId:number,
-    short:ShortType,
-    long:LongType
+  updateId:number,
+  short:ShortType,
+  long:LongType
 }
 
 interface ShortType {
@@ -26,8 +26,8 @@ interface LongType {
 }
 
 interface TransactionEntityType {
-    totalQuantity:number;
-    remainingQuantity:number;
-    makerIds:Record<string, Array<string>>; // userId:orderId
-    takerIds:Record<string, Array<string>>; // userId:orderId
+  totalQuantity:number;
+  remainingQuantity:number;
+  makerIds:Record<string, Array<string>>; // userId: [orderId]
+  takerIds:Record<string, Array<string>>; // userId: [orderId]
 }

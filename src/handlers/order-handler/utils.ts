@@ -1,10 +1,11 @@
+import { AdapterEntityType, AdapterMessageType, type SidePerp } from "@cex/shared";
 import { FILLS } from "../../memory/fills/fills.js";
-import { addPriceToOrderBookIndex,PERPETUAL_ORDERBOOK_STORE, PERPETUAL_ORDERBOOK_STORE_INDEX, updateStockUpdateId, type Side} from "../../memory/orderbook/prep-orderbook.js"
-import { ORDERS, removeUserOrderInIndex, updateOrderFullFilledQuantity, updateOrderStatus, type Order } from "../../memory/orders/orders.js";
+import { addPriceToOrderBookIndex,PERPETUAL_ORDERBOOK_STORE, PERPETUAL_ORDERBOOK_STORE_INDEX, updateStockUpdateId} from "../../memory/orderbook/prep-orderbook.js"
+import { ORDERS, removeUserOrderInIndex, updateOrderFullFilledQuantity, updateOrderStatus } from "../../memory/orders/orders.js";
 import { queueMessageForAdapter } from "../../queue/db-publisher-client.js";
 import { OrderSide } from "../../types/perp-types.js"
 import { hanldeContracts } from "../contract-handler/contract.handler.js"
-import { AdapterEntityType, AdapterMessageType } from "../../types/db-adapter-types.js"
+
 
 export const actionCreateLong = (userId:string, stockSymbol:string, userPrice:number, quantity:number, orderId:string) => {
 
@@ -70,7 +71,7 @@ export const updateOrderOfMakershanldeContract = (userIds: Record<string,Array<s
         break;
       }
 
-			const order = ORDERS[orderId];  
+			const order = ORDERS[orderId]!;  
       let pos = 0;
 
       const availableQty = order?.quantity! - order?.filledQuantity!
@@ -111,7 +112,16 @@ export const updateOrderOfMakershanldeContract = (userIds: Record<string,Array<s
         })
 
         delete ORDERS[orderId];
-        removeMakerOrderId(order?.symbol!, order?.side!, order?.price!, userId!, orderId!);
+        if (order?.side === "long" || order?.side === "short") {
+          removeMakerOrderId(
+            order.symbol!,
+            order.side,
+            order.price!,
+            userId!,
+            orderId!
+          );
+        }
+        
         removeUserOrderInIndex(userId, orderId, order?.symbol!);
 			}
 			else{
@@ -189,45 +199,45 @@ export const handleCancelOrder = (payload:any):any => {
 
   const price = order.price;  
 
-  if(!PERPETUAL_ORDERBOOK_STORE[order.symbol]![order.side][price]){
+  if(!PERPETUAL_ORDERBOOK_STORE[order.symbol]![order.side as SidePerp][price]){
     throw new Error("Invalid Order Price");
   }
 
   //check if userid exist in makers
-  if(!PERPETUAL_ORDERBOOK_STORE[order.symbol]![order.side]![price]?.makerIds[userId]){
+  if(!PERPETUAL_ORDERBOOK_STORE[order.symbol]![order.side as SidePerp]![price]?.makerIds[userId]){
     throw new Error("Invalid User Id");
   }
 
-  const totalOrderBookQuantity = PERPETUAL_ORDERBOOK_STORE[order.symbol]![order.side]![price]?.totalQuantity!
-  const totalOrderBookFillledQuantity = PERPETUAL_ORDERBOOK_STORE[order.symbol]![order.side]![price]?.remainingQuantity!
-  const makerIds = PERPETUAL_ORDERBOOK_STORE[order.symbol]![order.side]![price]!.makerIds[userId]!
+  const totalOrderBookQuantity = PERPETUAL_ORDERBOOK_STORE[order.symbol]![order.side as SidePerp]![price]?.totalQuantity!
+  const totalOrderBookFillledQuantity = PERPETUAL_ORDERBOOK_STORE[order.symbol]![order.side as SidePerp]![price]?.remainingQuantity!
+  const makerIds = PERPETUAL_ORDERBOOK_STORE[order.symbol]![order.side as SidePerp]![price]!.makerIds[userId]!
 
-  if(order.quantity == PERPETUAL_ORDERBOOK_STORE[order.symbol]![order.side]![price]?.totalQuantity ){
-    delete PERPETUAL_ORDERBOOK_STORE[order.symbol]![order.side]![price]
+  if(order.quantity == PERPETUAL_ORDERBOOK_STORE[order.symbol]![order.side as SidePerp]![price]?.totalQuantity ){
+    delete PERPETUAL_ORDERBOOK_STORE[order.symbol]![order.side as SidePerp]![price]
     
     //update index
-    PERPETUAL_ORDERBOOK_STORE_INDEX[order.symbol]![order.side] = 
-    PERPETUAL_ORDERBOOK_STORE_INDEX[order.symbol]![order.side].filter((price : number) => price != order.price);
+    PERPETUAL_ORDERBOOK_STORE_INDEX[order.symbol]![order.side as SidePerp] = 
+    PERPETUAL_ORDERBOOK_STORE_INDEX[order.symbol]![order.side as SidePerp].filter((price : number) => price != order.price);
   }
 
-  else if(PERPETUAL_ORDERBOOK_STORE[order.symbol]![order.side]![price]!.makerIds[userId]!.length > 1){
+  else if(PERPETUAL_ORDERBOOK_STORE[order.symbol]![order.side as SidePerp]![price]!.makerIds[userId]!.length > 1){
     //remove order id
-    PERPETUAL_ORDERBOOK_STORE[order.symbol]![order.side]![price]!.makerIds[userId] = makerIds.filter(
+    PERPETUAL_ORDERBOOK_STORE[order.symbol]![order.side as SidePerp]![price]!.makerIds[userId] = makerIds.filter(
 			(id: string) => id !== orderId
 		);
 
     //updater order book
-    PERPETUAL_ORDERBOOK_STORE[order.symbol]![order.side]![price]!.totalQuantity = totalOrderBookQuantity - order.quantity
-    PERPETUAL_ORDERBOOK_STORE[order.symbol]![order.side]![price]!.remainingQuantity = totalOrderBookFillledQuantity - order.quantity
+    PERPETUAL_ORDERBOOK_STORE[order.symbol]![order.side as SidePerp]![price]!.totalQuantity = totalOrderBookQuantity - order.quantity
+    PERPETUAL_ORDERBOOK_STORE[order.symbol]![order.side as SidePerp]![price]!.remainingQuantity = totalOrderBookFillledQuantity - order.quantity
   }
 
-  else if(PERPETUAL_ORDERBOOK_STORE[order.symbol]![order.side]![price]!.makerIds[userId]!.length == 1){
+  else if(PERPETUAL_ORDERBOOK_STORE[order.symbol]![order.side as SidePerp]![price]!.makerIds[userId]!.length == 1){
     //remove user id
-    delete PERPETUAL_ORDERBOOK_STORE[order.symbol]![order.side]![price]!.makerIds[userId]
+    delete PERPETUAL_ORDERBOOK_STORE[order.symbol]![order.side as SidePerp]![price]!.makerIds[userId]
 
     //updater order book
-    PERPETUAL_ORDERBOOK_STORE[order.symbol]![order.side]![price]!.totalQuantity = totalOrderBookQuantity - order.quantity
-    PERPETUAL_ORDERBOOK_STORE[order.symbol]![order.side]![price]!.remainingQuantity = totalOrderBookFillledQuantity - order.quantity
+    PERPETUAL_ORDERBOOK_STORE[order.symbol]![order.side as SidePerp]![price]!.totalQuantity = totalOrderBookQuantity - order.quantity
+    PERPETUAL_ORDERBOOK_STORE[order.symbol]![order.side as SidePerp]![price]!.remainingQuantity = totalOrderBookFillledQuantity - order.quantity
   }
 
   updateOrderStatus(orderId, "cancelled");
@@ -249,14 +259,14 @@ export const handleCancelOrder = (payload:any):any => {
   return PERPETUAL_ORDERBOOK_STORE[order.symbol]
 }
 
-const removeMakerOrderId = (symbol:string,side:Side,price:number,userId:string,orderId:string) =>{
+const removeMakerOrderId = (symbol:string,side:SidePerp,price:number,userId:string,orderId:string) =>{
   const makerIds = PERPETUAL_ORDERBOOK_STORE[symbol]![side]![price]!.makerIds[userId]!
   PERPETUAL_ORDERBOOK_STORE[symbol]![side]![price]!.makerIds[userId] = makerIds.filter(
 		(id: string) => id !== orderId
 	);
 }
 
-export const removeTakerOrderId = (symbol:string,side:Side,price:number,userId:string,orderId:string) =>{
+export const removeTakerOrderId = (symbol:string,side:SidePerp,price:number,userId:string,orderId:string) =>{
   const takerIds = PERPETUAL_ORDERBOOK_STORE[symbol]![side]![price]!.takerIds[userId]!
   PERPETUAL_ORDERBOOK_STORE[symbol]![side]![price]!.takerIds[userId] = takerIds.filter(
 		(id: string) => id !== orderId
