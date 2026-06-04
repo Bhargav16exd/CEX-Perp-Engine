@@ -1,5 +1,5 @@
+import type { EngineWsMessage } from "@cex/shared";
 import { createClient } from "redis";
-import type { WsResponseType } from "../types/ws-types.js";
 
 const REDIS_URL = process.env.REDIS_URL || "";
 
@@ -9,6 +9,6 @@ export const wsEventPublisher = createClient({url:REDIS_URL}).on("err",(error)=>
   console.log("ERROR WHILE CREATING PUBILSHER");
 })
 
-export const queueMessageWsServer = async (payload:WsResponseType) => {
+export const queueMessageWsServer = async (payload:EngineWsMessage) => {
   await wsEventPublisher.lPush(WS_BROADCAST_QUEUE ,JSON.stringify(payload))
 }

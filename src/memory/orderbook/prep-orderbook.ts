@@ -40,14 +40,7 @@ export const handleCreateOrderEntityRequest = (payload:any) => {
   return true
 }
 
-export const getDepth = (payload:any):any=> {
-  const { stockSymbol } = payload;
-  return {
-    updateId:getStockUpdateId(stockSymbol),
-    orderbook:PERPETUAL_ORDERBOOK_STORE[stockSymbol],
-    orderbookIndex:PERPETUAL_ORDERBOOK_STORE_INDEX[stockSymbol]
-  }
-}
+
 
 export const getStockUpdateId = (stockSymbol:string) => {
   return PERPETUAL_ORDERBOOK_STORE[stockSymbol]?.updateId!
@@ -70,3 +63,16 @@ export const loadOrderbookIndex = (backup: PerpetualOrderbookIndexStoreType) => 
   Object.assign(PERPETUAL_ORDERBOOK_STORE_INDEX, backup);
 }
 
+/* 
+  ------ QUEUE REQUEST HANDLERS ------
+  ------------------------------------
+*/
+
+export const handle_GET_DEPTH_Request = (payload:any):any=> {
+  const { stockSymbol } = payload;
+  return {
+    updateId:getStockUpdateId(stockSymbol),
+    orderbook:PERPETUAL_ORDERBOOK_STORE[stockSymbol],
+    orderbookIndex:PERPETUAL_ORDERBOOK_STORE_INDEX[stockSymbol]
+  }
+}

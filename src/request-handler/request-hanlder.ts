@@ -3,7 +3,7 @@ import { hanldeLongOrders } from "../handlers/order-handler/long.handler.js";
 import { hanldeShortOrders } from "../handlers/order-handler/short.handler.js";
 import { handleCancelOrder } from "../handlers/order-handler/utils.js";
 import { handle_GET_USER_BALANCE_Request, handle_INIT_USER_BALANCE_Request } from "../memory/balances/balances.js";
-import { getDepth, handleCreateOrderEntityRequest } from "../memory/orderbook/prep-orderbook.js";
+import { handle_GET_DEPTH_Request, handleCreateOrderEntityRequest } from "../memory/orderbook/prep-orderbook.js";
 import { handleOrderOpenOrderRequest } from "../memory/orders/orders.js";
 import { OrderSide } from "../types/perp-types.js";
 import { handle_UPDATE_USER_BALANCE_Request } from "../memory/balances/balances.js";
@@ -44,6 +44,10 @@ export function engineRequestHanlder(request:EngineRequestType){
     }
   }
 
+  if(messageType == EngineCommandEnum.GET_DEPTH){
+    return handle_GET_DEPTH_Request(request.payload); 
+  }
+
   /*
     ------- CONTRACT REQUEST HANLDER -------- 
     -----------------------------------------
@@ -63,9 +67,7 @@ export function engineRequestHanlder(request:EngineRequestType){
     return handleCreateOrderEntityRequest(request.payload as any);
   }
 
-  if(messageType == EngineCommandEnum.GET_DEPTH){
-    return getDepth(request.payload); 
-  }
+  
 
   if(messageType == EngineCommandEnum.GET_OPEN_ORDERS){
     return handleOrderOpenOrderRequest(request.payload);

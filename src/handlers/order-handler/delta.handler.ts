@@ -1,11 +1,11 @@
 import { DIRTY_ORDERBOOK_PRICES } from "../../memory/dirty-prices/dirty-prices.js";
 import { getStockUpdateId, PERPETUAL_ORDERBOOK_STORE } from "../../memory/orderbook/prep-orderbook.js";
 import { queueMessageWsServer } from "../../queue/ws-publisher-client.js";
-import { WsPayloadType } from "../../types/ws-types.js";
 
 const PUBLISH_DIRTY_PRICES_INTERVAL = 100;
 
 export const publishDirtyPrices = () => {
+
   setInterval(()=>{
     for(const stockSymbol of Object.keys(DIRTY_ORDERBOOK_PRICES)){
 
@@ -33,12 +33,10 @@ export const publishDirtyPrices = () => {
       }
 
       queueMessageWsServer({
-        wsPayloadType:WsPayloadType.depth,
-        payload:{
+          topic:`perp-${stockSymbol}`,
           bids:bidsPayload,
           asks:asksPayload,
           updateId
-        }
       })
 
       priceSet.clear();
