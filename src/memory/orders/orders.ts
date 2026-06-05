@@ -48,7 +48,7 @@ export const updateOrderStatus = (orderId:string, status:OrderStatus) => {
 	ORDERS[orderId].status = status
 }
 
-export const getUserActiveOrders = (userId:string, symbol:string) => {
+export const getUserActiveOrders = (userId:string, symbol:string, offset:number, count:number) => {
   
   const userOrders = ACTIVE_ORDER_INDEX.get(userId);
   if(!userOrders){
@@ -61,9 +61,13 @@ export const getUserActiveOrders = (userId:string, symbol:string) => {
     return []
   }
 
-  const activeOrders = symbolOrders.map((id)=>{
-    return ORDERS[id]!
-  })
+  let activeOrders = [];
+  let counter = 0;
+
+  for(let i = offset ; i < symbolOrders.length && counter < count ; i++ , counter++){
+    const id = symbolOrders[i]!;
+    activeOrders.push(ORDERS[id]);
+  }
   
   return activeOrders; 
 }
@@ -115,14 +119,6 @@ export const removeUserOrderInIndex = (userId:string, orderId:string, symbol:str
   }
 }
 
-export const handleOrderOpenOrderRequest = (payload:any) => {
-  const { id, symbol } = payload;
-  if(!id){
-    throw new Error("Invalid Input");
-  }
-  return getUserActiveOrders(id, symbol);
-}
-
 /* 
   ------ LOADING BACKUPS IN MEMORY ------
   ---------------------------------------
@@ -139,4 +135,19 @@ export const loadOrders = (orderBackup: OrderEntityType, orderIndexBackup: Map<s
     )
   }
 
+}
+
+/* 
+  ------ QUEUE REQUEST HANDLERS ------
+  ------------------------------------
+*/
+export const handle_GET_OPEN_ORDERS_Request = (payload:any) => {
+  const { id, symbol, offset, count } = payload;
+  const numOffset = Number(offset);
+  const numCount = Number(count);
+
+  if(!id){
+    throw new Error("Invalid Input");
+  }
+  return getUserActiveOrders(id, symbol, numOffset, numCount);
 }

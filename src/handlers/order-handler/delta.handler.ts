@@ -33,10 +33,10 @@ export const publishDirtyPrices = () => {
       }
 
       queueMessageWsServer({
-          topic:`perp-${stockSymbol}`,
-          bids:bidsPayload,
-          asks:asksPayload,
-          updateId
+        topic:`perp-${stockSymbol}`,
+        bids:bidsPayload,
+        asks:asksPayload,
+        updateId
       })
 
       priceSet.clear();

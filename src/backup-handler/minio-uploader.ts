@@ -78,6 +78,8 @@ export const loadBackups = async () =>{
     const parsedBackup  = JSON.parse(jsonStringBackupData) as BackupTypes;
 
 
+    console.log(parsedBackup)
+
     const activeOrderIndex = new Map(
       Object.entries(parsedBackup.ACTIVE_ORDER_INDEX).map(
         ([symbol, userMap]) => [
@@ -94,7 +96,7 @@ export const loadBackups = async () =>{
     loadBalances(parsedBackup.BALANCE_STORE);
     loadContracts(parsedBackup.CONTRACT_STORE);
     loadOrderbook(parsedBackup.PERPETUAL_ORDERBOOK_STORE);
-    loadOrderbookIndex(parsedBackup.PERPETUAL_ORDERBOOK_STORE_INDEX);
+    //loadOrderbookIndex(parsedBackup.PERPETUAL_ORDERBOOK_STORE_INDEX);
     loadOrders(parsedBackup.ORDERS, activeOrderIndex);
     
     await fs.unlink(DOWNLOAD_LOCAL_STATE_FILE);
