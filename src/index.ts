@@ -2,7 +2,7 @@ import dotenv from "dotenv";
 import { connectRedis, publisher, subscriber } from "./queue/queue-client.js";
 import { engineRequestHanlder } from "./request-handler/request-hanlder.js";
 import { publishDirtyPrices } from "./handlers/order-handler/delta.handler.js";
-import type { EngineRequestType, EngineResponseType } from "@cex/shared";
+import type { EngineRequestType, EngineResponseType } from "@bhargav16exdd/cex";
 import { pingMinIO } from "./backup-handler/minio-client.js";
 import { loadBackups, startBackups } from "./backup-handler/minio-uploader.js";
 

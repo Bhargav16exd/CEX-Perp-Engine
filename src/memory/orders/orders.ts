@@ -1,4 +1,4 @@
-import { MarketType, type OrderEntityType, type OrderStatus, type OrderType, type SidePerp } from "@cex/shared";
+import { MarketType, type OrderEntityType, type OrderStatus, type OrderType, type SidePerp } from "@bhargav16exdd/cex";
 
 export const ORDERS : Record<string, OrderEntityType> = {};
 

@@ -3,7 +3,7 @@ import { readBalanceStoreUserLockedBalance, readBalanceStoreUserTotalBalance, up
 import { CONTRACT_STORE, createContractUser, createContractUserStock, readContractStoreUserContractAvgPrice, readContractStoreUserContractCollateral, readContractStoreUserContractQuantity, readContractStoreUserContractUnrealizedPnL, updateContractStoreUserContractAvgPrice, updateContractStoreUserContractCollateral, updateContractStoreUserContractQuantity } from "../../memory/contracts/contracts-store.js";
 import type { ContractInputPayloadDbAdapter } from "../../memory/contracts/contracts-types.js";
 import { queueMessageForAdapter } from "../../queue/db-publisher-client.js";
-import { AdapterEntityType, AdapterMessageType } from "@cex/shared";
+import { AdapterEntityType, AdapterMessageType } from "@bhargav16exdd/cex";
 import { OrderSide } from "../../types/perp-types.js";
 
 

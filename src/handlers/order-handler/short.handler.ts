@@ -7,7 +7,7 @@ import { PERPETUAL_ORDERBOOK_STORE, PERPETUAL_ORDERBOOK_STORE_INDEX, updateStock
 import { createOrder, fetchFullFilledQuantityFromOrderId, ORDERS, removeUserOrderInIndex, updateOrderFullFilledQuantity } from "../../memory/orders/orders.js";
 import { queueMessageForAdapter } from "../../queue/db-publisher-client.js";
 import { pushDirtyPrices } from "../../memory/dirty-prices/dirty-prices.js";
-import { AdapterEntityType, AdapterMessageType, OrderType, type OrderEntityType } from "@cex/shared";
+import { AdapterEntityType, AdapterMessageType, OrderType, type OrderEntityType } from "@bhargav16exdd/cex";
 
 
 export const hanldeShortOrders = (payload: OrderInputPayload):any => {

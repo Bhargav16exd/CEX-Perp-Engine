@@ -1,4 +1,4 @@
-import type { SidePerp } from "@cex/shared";
+import type { SidePerp } from "@bhargav16exdd/cex";
 import type { PerpetualOrderbookIndexStoreType, PerpetualOrderbookStoreType } from "./perp-orderbook-types.js";
 
 export const PERPETUAL_ORDERBOOK_STORE: PerpetualOrderbookStoreType = {};

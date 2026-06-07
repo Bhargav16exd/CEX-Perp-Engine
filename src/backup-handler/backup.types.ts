@@ -1,4 +1,4 @@
-import type { OrderEntityType } from "@cex/shared";
+import type { OrderEntityType } from "@bhargav16exdd/cex";
 import type { PerpetualOrderbookIndexStoreType, PerpetualOrderbookStoreType } from "../memory/orderbook/perp-orderbook-types.js";
 import type { BalanceStoreType } from "../memory/balances/balances-types.js";
 import type { ContractsStoreType } from "../memory/contracts/contracts-types.js";

@@ -1,4 +1,4 @@
-import { AdapterEntityType, AdapterMessageType, type SidePerp } from "@cex/shared";
+import { AdapterEntityType, AdapterMessageType, type SidePerp } from "@bhargav16exdd/cex";
 import { FILLS } from "../../memory/fills/fills.js";
 import { addPriceToOrderBookIndex,PERPETUAL_ORDERBOOK_STORE, PERPETUAL_ORDERBOOK_STORE_INDEX, updateStockUpdateId} from "../../memory/orderbook/prep-orderbook.js"
 import { ORDERS, removeUserOrderInIndex, updateOrderFullFilledQuantity, updateOrderStatus } from "../../memory/orders/orders.js";

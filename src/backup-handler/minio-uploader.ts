@@ -6,13 +6,21 @@ import { ACTIVE_ORDER_INDEX, loadOrders, ORDERS } from "../memory/orders/orders.
 import type { BackupTypes } from "./backup.types.js";
 import BALANCE_STORE, { loadBalances } from "../memory/balances/balances.js";
 import { CONTRACT_STORE, loadContracts } from "../memory/contracts/contracts-store.js";
+import dotenv from "dotenv"
 
+dotenv.config()
+
+let src = "/src/"
+
+if(process.env.ENV === "PROD"){
+  src="/"
+}
 
 const BUCKET_NAME = "centralized-exchange-bucket"
 const FILE_NAME = "perp-state.json";
 
-const UPLOAD_LOCAL_STATE_FILE = path.join(`${process.cwd()}/src/backup/upload/`, "perp-state.json");
-const DOWNLOAD_LOCAL_STATE_FILE = path.join(`${process.cwd()}/src/backup/download/`, "perp-state.json");
+const UPLOAD_LOCAL_STATE_FILE = path.join(`${process.cwd()}${src}backup/upload/`, "perp-state.json");
+const DOWNLOAD_LOCAL_STATE_FILE = path.join(`${process.cwd()}${src}backup/download/`, "perp-state.json");
 
 
 export const backupServerState = async () =>{

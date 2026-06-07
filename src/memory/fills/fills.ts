@@ -1,4 +1,4 @@
-import type { FillType } from "@cex/shared";
+import type { FillType } from "@bhargav16exdd/cex";
 
 
 export let FILLS: FillType[] = [];
